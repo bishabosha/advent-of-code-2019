@@ -15,5 +15,5 @@ def calcFuel[A: Numeric](f: A => A)(as: List[A]) =
 val totalFuel    = inputInts.map(calcFuel(fuel))
 val totalFuelRec = inputInts.map(calcFuel(fuelRec))
 
-val exit1 = intChallenge("day1_1")(totalFuel).sync()
-val exit2 = intChallenge(in="day1_1", out="day1_2")(totalFuelRec).sync()
+val exit1 = intChallenge(in="day1", out="day1_1")(totalFuel).sync()
+val exit2 = intChallenge(in="day1", out="day1_2")(totalFuelRec).sync()
