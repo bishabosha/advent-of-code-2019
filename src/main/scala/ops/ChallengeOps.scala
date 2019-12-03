@@ -2,6 +2,7 @@ package ops
 
 import zio._
 import zio.blocking._
+import zio.console._
 
 object ChallengeOps with
 
@@ -16,6 +17,18 @@ object ChallengeOps with
     yield ()
     program.mapError(pprintThrowable).result
   end intChallenge
+
+  def stringChallenge(in: String, out: String)(challenge: TaskR[List[String], String]): URIO[Blocking, Result] =
+    val program = for
+      input  <- FileIO.lines(s"inputs/$in")
+      answer <- challenge.provide(input)
+      _      <- FileIO.writeString(s"solutions/$out", answer)
+    yield ()
+    program.mapError(pprintThrowable).result
+  end stringChallenge
+
+  val inputLine: ZIO[List[String], IllegalArgumentException, String] =
+    ZIO.accessM(xs => ZIO.fromOption(xs.headOption).mapError(_ => IllegalArgumentException("Empty input.")))
 
   val inputInts: ZIO[List[String], NumberFormatException, List[Int]] =
     ZIO.accessM(in =>

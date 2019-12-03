@@ -21,5 +21,8 @@ object FileIO with
   def lines(file: String): ZIO[Blocking, IOException | InvalidPathException, List[String]] =
     FileIO.path(file) >>= FileIO.lines
 
+  def writeString(file: String, str: String): ZIO[Blocking, IOException | InvalidPathException, Unit] =
+    FileIO.path(file) >>= (FileIO.writeString(_, str))
+
   def writeInt(file: String, int: Int): ZIO[Blocking, IOException | InvalidPathException, Unit] =
     FileIO.path(file) >>= (FileIO.writeString(_, int.toString))
