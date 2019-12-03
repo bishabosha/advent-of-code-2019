@@ -5,11 +5,14 @@ import zio.blocking._
 
 object ChallengeOps with
 
-  def intChallenge(name: String)(challenge: TaskR[List[String], Int]): URIO[Blocking, Result] =
+  def intChallenge(inout: String)(challenge: TaskR[List[String], Int]): URIO[Blocking, Result] =
+    intChallenge(inout, inout)(challenge)
+
+  def intChallenge(in: String, out: String)(challenge: TaskR[List[String], Int]): URIO[Blocking, Result] =
     val program = for
-      input  <- FileIO.lines(s"inputs/$name")
+      input  <- FileIO.lines(s"inputs/$in")
       answer <- challenge.provide(input)
-      _      <- FileIO.writeInt(s"solutions/$name", answer)
+      _      <- FileIO.writeInt(s"solutions/$out", answer)
     yield ()
     program.mapError(pprintThrowable).result
   end intChallenge
