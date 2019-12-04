@@ -52,7 +52,7 @@ object Day3 with
     yield
       shortest
 
-  val day3_1 = intChallenge(in="day3",out="day3_1")(shortestDist)
-  val day3_2 = intChallenge(in="day3",out="day3_2")(shortestDistWithSteps)
+  val day3_1 = intChallenge("day3")(shortestDist)
+  val day3_2 = intChallenge("day3")(shortestDistWithSteps)
 
 end Day3

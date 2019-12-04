@@ -2,8 +2,8 @@
 
 ## About
 
-These challenges are being implemented with [dotty](http://dotty.epfl.ch) using worksheets and functional programming libraries such as [ZIO](https://zio.dev) and [spire](https://typelevel.org/spire/) to lift IO operations and work with numerics.
+These challenges are being implemented with [dotty](http://dotty.epfl.ch) using functional programming libraries such as [ZIO](https://zio.dev) and [spire](https://typelevel.org/spire/) to lift IO operations and work with numerics.
 
 ### Usage
 
-`sbt launchIDE` to open vscode and then navigate to the challenge worksheets in `src/main/scala`, files ending in `.sc`. There should be a clickable text displayed by the editor: `Run this worksheet`. Or else activate the worksheet on save.
+`sbt console` to open the dotty repl. `import aoc.{_,given}` to get access to the `sync()` method, which you can call on any ZIO value that has type `Nothing` in its error channel to execute it and yield a result. Each challenge is implemented as a ZIO value following a naming scheme of `dayN_M` where `N` is the day and `M` is the challenge number.

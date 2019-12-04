@@ -28,8 +28,8 @@ object Day2 with
     first <- ZIO.effect(ints.head)
   yield first
 
-  val day2_1 = intChallenge(in="day2", out="day2_1")(prog(noun=12, verb=2) `compose` getTape)
-  val day2_2 = stringChallenge(in="day2", out="day2_2")(search(19690720, 0 to 99) `compose` getTape)
+  val day2_1 = intChallenge("day2")(prog(noun=12, verb=2) `compose` getTape)
+  val day2_2 = stringChallenge("day2")(search(19690720, 0 to 99) `compose` getTape)
 
   val codes = Map(
     1  -> threeAddr(_ + _),

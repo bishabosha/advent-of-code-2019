@@ -6,25 +6,20 @@ import zio.console._
 
 object ChallengeOps with
 
-  def intChallenge(inout: String)(challenge: TaskR[List[String], Int]): URIO[Blocking, Result] =
-    intChallenge(inout, inout)(challenge)
-
-  def intChallenge(in: String, out: String)(challenge: TaskR[List[String], Int]): URIO[Blocking, Result] =
+  def intChallenge(in: String)(challenge: TaskR[List[String], Int]): URIO[Blocking, Either[String, Int]] =
     val program = for
       input  <- FileIO.lines(s"inputs/$in")
       answer <- challenge.provide(input)
-      _      <- FileIO.writeInt(s"solutions/$out", answer)
-    yield ()
-    program.mapError(pprintThrowable).result
+    yield answer
+    program.mapError(pprintThrowable).either
   end intChallenge
 
-  def stringChallenge(in: String, out: String)(challenge: TaskR[List[String], String]): URIO[Blocking, Result] =
+  def stringChallenge(in: String)(challenge: TaskR[List[String], String]): URIO[Blocking, Either[String, String]] =
     val program = for
       input  <- FileIO.lines(s"inputs/$in")
       answer <- challenge.provide(input)
-      _      <- FileIO.writeString(s"solutions/$out", answer)
-    yield ()
-    program.mapError(pprintThrowable).result
+    yield answer
+    program.mapError(pprintThrowable).either
   end stringChallenge
 
   def inputLines(n: Int): ZIO[List[String], IndexOutOfBoundsException, List[String]] =
@@ -37,7 +32,5 @@ object ChallengeOps with
     ZIO.accessM(in =>
       ZIO.traverse(in.zipWithIndex)((s, i) =>
         StringIO.parseInt(s).mapError(err => NumberFormatException(s"At input ${i + 1}: ${err.getMessage}"))))
-
-  def [E](zio: ZIO[E, String, Unit]) result: URIO[E, Result] = zio.fold(Result.Error(_), _ => Result.Success)
 
   private def pprintThrowable(err: Throwable) = s"${err.getClass.getSimpleName}: ${err.getMessage}"
