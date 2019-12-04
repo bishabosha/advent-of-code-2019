@@ -27,8 +27,11 @@ object ChallengeOps with
     program.mapError(pprintThrowable).result
   end stringChallenge
 
-  val inputLine: ZIO[List[String], IllegalArgumentException, String] =
-    ZIO.accessM(xs => ZIO.fromOption(xs.headOption).mapError(_ => IllegalArgumentException("Empty input.")))
+  def inputLines(n: Int): ZIO[List[String], IndexOutOfBoundsException, List[String]] =
+    ZIO.accessM(xs => ZIO.effect(xs.take(n)).refineToOrDie)
+
+  val inputLine: ZIO[List[String], IndexOutOfBoundsException, String] =
+    inputLines(1).map(_.head)
 
   val inputInts: ZIO[List[String], NumberFormatException, List[Int]] =
     ZIO.accessM(in =>
