@@ -1,6 +1,7 @@
+package aoc
+
 import language.implicitConversions
 
-import aoc.{_,given}
 import spire.math._
 
 object Day1 with

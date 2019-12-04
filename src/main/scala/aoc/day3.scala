@@ -1,4 +1,5 @@
-import aoc.{_, given}
+package aoc
+
 import zio._
 
 object Day3 with
