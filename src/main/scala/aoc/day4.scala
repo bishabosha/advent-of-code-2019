@@ -2,11 +2,12 @@ package aoc
 
 import zio._
 import PartialFunction.condOpt
+import IntOps._
 
 object Day4 with
 
   def digitss(range: Range) =
-    range map IntOps.splitDigits
+    range map splitDigits
 
   def groups(seq: Array[Int], limit: Int) =
     (seq sliding limit map (_.distinct) filter (_.size == 1) flatten) toSet
@@ -25,7 +26,7 @@ object Day4 with
     for
       line  <- inputLine
       parts =  condOpt(line) { case Range(lo, hi) => lo.toInt to hi.toInt }
-      range <- ZIO fromOption parts mapError (_ => IllegalArgumentException(s"illegal input: $line"))
+      range <- ZIO fromOption parts asError IllegalArgumentException(s"illegal input: $line")
     yield range
 
   val numberOfPasswords     = getRange map digitss map (_.filter(criterion).size)

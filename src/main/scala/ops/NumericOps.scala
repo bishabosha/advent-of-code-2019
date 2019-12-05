@@ -23,10 +23,10 @@ object NumericOps with
   object IntOps with
 
     def splitDigits(i: Int): Array[Int] =
-      digits(i)
+      digits(i).toArray
 
     def splitDigits(i: Int, padLeft: Int): Array[Int] =
-      digits(i).reverse.padTo(padLeft, 0).reverse
+      digits(i).reverse.padTo(padLeft, 0).reverse.toArray
 
     def collapse(arr: Array[Int]): Int =
       arr.reverse.zipWithIndex.map((n, i) => (n * pow(10, i.toDouble)).toInt).reverse.sum
@@ -34,14 +34,14 @@ object NumericOps with
   end IntOps
 
 
-  private def digits(a: Int): Array[Int] =
+  private def digits(a: Int): List[Int] =
     def inner(acc: List[Int], a: Int): List[Int] = a match
       case 0 => acc
       case n => inner(n % 10 :: acc, n / 10)
     if a == 0 then
-      Array(0)
+      0 :: Nil
     else
-      inner(Nil, a).toArray
+      inner(Nil, a)
   end digits
 
 end NumericOps
