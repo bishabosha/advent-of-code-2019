@@ -4,20 +4,29 @@ import zio._
 import Option.when
 import IntOps._
 
+import annotation.tailrec
+
 object IntCodes with
 
-  type State = (List[Int], Int, List[Int], List[Int], List[Int]) // memory, ptr, stack, in, out
-  type Modes = (Int, Int, Int)
+  type Result = State | Terminate.type
+  final case class State(mem: IArray[Int], ptr: Int, in: List[Int], out: List[Int])
+  case object Terminate
+  final case class Modes(_1: Int, _2: Int, _3: Int)
+  type Comp = (given State) => Result
+  type Op = (given Modes) => Comp
 
-  val getTape = inputLine map splitCsv andThen inputInts
+  val getTape =
+    (inputLine map splitCsv andThen inputInts)
+      .filterOrDieMessage(_.nonEmpty)("Expected non empty tape")
+      .map(IArray(_:_*))
 
   def toCode(i: Int) =
     validate.tupled(splitDigits(i, padLeft=5) splitAt 3 bimap(identity, collapse))
 
-  def validate(modes: Array[Int], code: Int) =
-    Codes.get(code).flatMap(op => when(modes.forall(Modes.contains))(op(modes(2), modes(1), modes(0))))
+  def validate(modes: Array[Int], code: Int): Option[Comp] =
+    Codes.get(code).flatMap(op => when(modes.forall(Mode.contains))(op(given Modes(modes(2), modes(1), modes(0)))))
 
-  val Codes = Map(
+  val Codes = Map[Int, Op](
     1  -> binop(_ + _),
     2  -> binop(_ * _),
     3  -> inop,
@@ -29,72 +38,49 @@ object IntCodes with
     99 -> nullOp,
   )
 
-  val Modes = Map(
+  val Mode = Map(
     0 -> access _,
     1 -> value _
   )
 
-  def value(i: Int, mem: List[Int]) = i
-  def access(i: Int, mem: List[Int]) = mem(i)
+  def access(addr: Int, mem: IArray[Int]) = mem(mem(addr))
+  def value(addr: Int, mem: IArray[Int]) = mem(addr)
 
-  def nullOp(modes: Modes)(state: State): Option[State] = None
+  inline def arg(pi: => Modes => Int, offset: => Int => Int)(given Modes, State) =
+    Mode(pi(modes))(offset(ptr), mem)
 
-  def binop(binOp: (Int, Int) => Int)(modes: Modes)(state: State): Option[State] =
-    val (mem, ptr, stack, in, out) = state
-    val (lmode, rmode, _) = modes
-    val l :: r :: d :: _ = stack
-    val lArg = Modes(lmode)(l, mem)
-    val rArg = Modes(rmode)(r, mem)
-    val mem1 = mem.updated(d, binOp(lArg, rArg))
-    val ptr1 = ptr + 4
-    val stack1 = mem1.splitAt(ptr1)._2
-    Some(mem1, ptr1, stack1, in, out)
-  end binop
+  inline def _1(given Modes, State) = arg(_._1,_+1)
+  inline def _2(given Modes, State) = arg(_._2,_+2)
 
-  def relop(cond: (Int, Int) => Boolean)(modes: Modes)(state: State): Option[State] =
-    binop((l, r) => if cond(l,r) then 1 else 0)(modes)(state)
+  def binop(binOp: (Int, Int) => Int): Op =
+    state.copy(mem=mem.updated(mem(ptr+3), binOp(_1,_2)), ptr=ptr+4)
+  def relop(cond: (Int, Int) => Boolean): Op =
+    binop(cond(_,_) compare false)
+  def jumpop(cond: Int => Boolean): Op =
+    state.copy(ptr=if cond(_1) then _2 else ptr+3)
+  def inop: Op =
+    state.copy(mem=mem.updated(mem(ptr+1),in.head), ptr=ptr+2, in=in.tail)
+  def outop: Op =
+    state.copy(ptr=ptr+2, out=_1::out)
+  def nullOp: Op =
+    Terminate
 
-  def jumpop(cond: Int => Boolean)(modes: Modes)(state: State): Option[State] =
-    val (mem, ptr, stack, in, out) = state
-    val c :: i :: _ = stack
-    val ptr1 =
-      if cond(Modes(modes._1)(c, mem)) then Modes(modes._2)(i, mem)
-      else ptr + 3
-    val stack1 = mem.splitAt(ptr1)._2
-    Some(mem, ptr1, stack1, in, out)
-  end jumpop
+  def initial(init: IArray[Int], in: List[Int]) = State(init, 0, in, Nil)
 
-  def inop(modes: Modes)(state: State): Option[State] =
-    val (mem, ptr, stack, in, out) = state
-    val d :: _ = stack
-    val i :: in1 = in.ensuring(_ != Nil)
-    val mem1 = mem.updated(d, i)
-    val ptr1 = ptr + 2
-    val stack1 = mem1.splitAt(ptr1)._2
-    Some(mem1, ptr1, stack1, in1, out)
-  end inop
-
-  def outop(modes: Modes)(state: State): Option[State] =
-    val (mem, ptr, stack, in, out) = state
-    val v :: stack1 = stack
-    val o = Modes(modes._1)(v, mem)
-    Some(mem, ptr + 2, stack1, in, o :: out)
-  end outop
-
-  def exec(ls: List[Int], in: List[Int]): Either[IllegalStateException, (List[Int], List[Int], List[Int])] =
-    @annotation.tailrec
-    def inner(mem: List[Int], ptr: Int, stack: List[Int], in: List[Int], out: List[Int]): Either[IllegalStateException, (List[Int], List[Int], List[Int])] =
-      stack match
-      case i :: stack =>
-        toCode(i) match
-        case Some(op) =>
-          op(mem, ptr, stack, in, out) match
-          case Some(mem, ptr, stack, in, out) => inner(mem, ptr, stack, in, out)
-          case None                           => Right(mem, in, out)
-        case None => Left(IllegalStateException(s"$i is not a legal intcode"))
-      case Nil => Left(IllegalStateException("No instructions"))
-    end inner
-    inner(ls, 0, ls, in, Nil)
+  @tailrec def exec(given State): Either[IllegalStateException, State] =
+    toCode(mem(ptr)) match
+    case Some(op) =>
+      op match
+      case given _: State => exec
+      case Terminate      => Right(state)
+    case None => Left(IllegalStateException(s"${state.mem(state.ptr)} at Addr(${state.ptr}) is not a legal intcode"))
   end exec
+
+  inline def modes(given modes: Modes): modes.type = modes
+  inline def state(given state: State): state.type = state
+  inline def mem(given state: State): state.mem.type = state.mem
+  inline def ptr(given state: State): state.ptr.type = state.ptr
+  inline def in(given state: State): state.in.type = state.in
+  inline def out(given state: State): state.out.type = state.out
 
 end IntCodes
