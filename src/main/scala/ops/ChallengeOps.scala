@@ -6,27 +6,17 @@ import zio.console._
 
 object ChallengeOps with
 
-  def intChallenge(in: String)(challenge: TaskR[List[String], Int]): URIO[Blocking, Either[String, Int]] =
-    val program = for
-      input  <- FileIO.lines(s"inputs/$in")
-      answer <- challenge.provide(input)
-    yield answer
-    program.mapError(pprintThrowable).either
-  end intChallenge
+  def challenge[A](in: String)(challenge: TaskR[List[String], A]): URIO[Blocking, Either[String, A]] =
+    (FileIO.lines(s"inputs/$in") >>= challenge.provide).mapError(pprintThrowable).either
 
-  def stringChallenge(in: String)(challenge: TaskR[List[String], String]): URIO[Blocking, Either[String, String]] =
-    val program = for
-      input  <- FileIO.lines(s"inputs/$in")
-      answer <- challenge.provide(input)
-    yield answer
-    program.mapError(pprintThrowable).either
-  end stringChallenge
+  val inputLines: ZIO[List[String], IndexOutOfBoundsException, List[String]] =
+    ZIO.environment
 
-  def inputLines(n: Int): ZIO[List[String], IndexOutOfBoundsException, List[String]] =
+  def inputLinesN(n: Int): ZIO[List[String], IndexOutOfBoundsException, List[String]] =
     ZIO.accessM(xs => ZIO.effect(xs.take(n)).refineToOrDie)
 
   val inputLine: ZIO[List[String], IndexOutOfBoundsException, String] =
-    inputLines(1).map(_.head)
+    inputLinesN(1).map(_.head)
 
   val inputInts: ZIO[List[String], NumberFormatException, List[Int]] =
     ZIO.accessM(in =>

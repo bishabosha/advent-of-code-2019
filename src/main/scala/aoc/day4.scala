@@ -32,7 +32,7 @@ object Day4 with
   val numberOfPasswords     = getRange map digitss map (_.filter(criterion).size)
   val numberOfRealPasswords = getRange map digitss map (_.filter(criterionRestrictive).size)
 
-  val day4_1 = intChallenge("day4")(numberOfPasswords)
-  val day4_2 = intChallenge("day4")(numberOfRealPasswords)
+  val day4_1 = challenge("day4")(numberOfPasswords)
+  val day4_2 = challenge("day4")(numberOfRealPasswords)
 
 end Day4

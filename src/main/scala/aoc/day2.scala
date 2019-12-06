@@ -23,7 +23,7 @@ object Day2 with
   def run(noun: Int, verb: Int) =
     (initialise(noun, verb) >>= (tpe => ZIO.fromEither(exec(given initial(tpe,Nil))))) map (_.mem(0))
 
-  val day2_1 = intChallenge("day2")(run(noun=12, verb=2) `compose` getTape)
-  val day2_2 = stringChallenge("day2")(search(19690720, 0 to 99) `compose` getTape)
+  val day2_1 = challenge("day2")(run(noun=12, verb=2) `compose` getTape)
+  val day2_2 = challenge("day2")(search(19690720, 0 to 99) `compose` getTape)
 
 end Day2

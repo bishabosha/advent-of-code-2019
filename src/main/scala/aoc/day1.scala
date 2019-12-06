@@ -18,7 +18,7 @@ object Day1 with
   val totalFuel    = inputInts.map(calcFuel(fuel))
   val totalFuelRec = inputInts.map(calcFuel(fuelRec))
 
-  val day1_1 = intChallenge("day1")(totalFuel)
-  val day1_2 = intChallenge("day1")(totalFuelRec)
+  val day1_1 = challenge("day1")(totalFuel)
+  val day1_2 = challenge("day1")(totalFuelRec)
 
 end Day1
