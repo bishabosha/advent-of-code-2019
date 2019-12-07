@@ -1,17 +1,14 @@
 package aoc
 
-import zio._
-import Option.when
 import IntOps._
-
-import annotation.tailrec
 
 object IntCodes with
 
   type Result = State | Terminate.type
   final case class State(mem: IArray[Int], ptr: Int, in: List[Int], out: List[Int])
   case object Terminate
-  final case class Modes(_1: Int, _2: Int, _3: Int)
+  type Modes = (Arg, Arg, Arg)
+  type Arg = Int => (given State) => Int
   type Comp = (given State) => Result
   type Op = (given Modes) => Comp
 
@@ -24,33 +21,28 @@ object IntCodes with
     validate.tupled(splitDigits(i, padLeft=5) splitAt 3 bimap(identity, collapse))
 
   def validate(modes: Array[Int], code: Int): Option[Comp] =
-    Codes.get(code).flatMap(op => when(modes.forall(Mode.contains))(op(given Modes(modes(2), modes(1), modes(0)))))
+    for op <- Codes.get(code); args <- Some(modes.flatMap(Modes.get))
+    if args.length == 3 yield op(given (args(2), args(1), args(0)))
 
   val Codes = Map[Int, Op](
-    1  -> binop(_ + _),
-    2  -> binop(_ * _),
+    1  -> binop(_+_),
+    2  -> binop(_*_),
     3  -> inop,
     4  -> outop,
-    5  -> jumpop(_ != 0),
-    6  -> jumpop(_ == 0),
-    7  -> relop(_ < _),
-    8  -> relop(_ == _),
+    5  -> jumpop(_!=0),
+    6  -> jumpop(_==0),
+    7  -> relop(_<_),
+    8  -> relop(_==_),
     99 -> nullOp,
   )
 
-  val Mode = Map(
-    0 -> access _,
-    1 -> value _
+  val Modes = Map[Int, Arg](
+    0 -> access,
+    1 -> value
   )
 
-  def access(addr: Int, mem: IArray[Int]) = mem(mem(addr))
-  def value(addr: Int, mem: IArray[Int]) = mem(addr)
-
-  inline def arg(pi: => Modes => Int, offset: => Int => Int)(given Modes, State) =
-    Mode(pi(modes))(offset(ptr), mem)
-
-  inline def _1(given Modes, State) = arg(_._1,_+1)
-  inline def _2(given Modes, State) = arg(_._2,_+2)
+  def access(offset: Int)(given State) = mem(mem(ptr+offset))
+  def value(offset: Int)(given State) = mem(ptr+offset)
 
   def binop(binOp: (Int, Int) => Int): Op =
     state.copy(mem=mem.updated(mem(ptr+3), binOp(_1,_2)), ptr=ptr+4)
@@ -67,7 +59,7 @@ object IntCodes with
 
   def initial(init: IArray[Int], in: List[Int]) = State(init, 0, in, Nil)
 
-  @tailrec def exec(given State): Either[IllegalStateException, State] =
+  def exec(given State): Either[IllegalStateException, State] =
     toCode(mem(ptr)) match
     case Some(op) => op match
       case given _: State => exec
@@ -75,11 +67,12 @@ object IntCodes with
     case None => Left(IllegalStateException(s"${state.mem(state.ptr)} at Addr(${state.ptr}) is not a legal intcode"))
   end exec
 
-  inline def modes(given modes: Modes): modes.type = modes
+  inline def _1(given modes: Modes, state: State) = modes _1 1
+  inline def _2(given modes: Modes, state: State) = modes _2 2
   inline def state(given state: State): state.type = state
-  inline def mem(given state: State): state.mem.type = state.mem
-  inline def ptr(given state: State): state.ptr.type = state.ptr
-  inline def in(given state: State): state.in.type = state.in
-  inline def out(given state: State): state.out.type = state.out
+  inline def mem(given State): state.mem.type = state.mem
+  inline def ptr(given State): state.ptr.type = state.ptr
+  inline def in(given State): state.in.type = state.in
+  inline def out(given State): state.out.type = state.out
 
 end IntCodes
