@@ -9,9 +9,6 @@ object ChallengeOps with
   def challenge[A](in: String)(challenge: TaskR[List[String], A]): URIO[Blocking, Either[String, A]] =
     (FileIO.lines(s"inputs/$in") >>= challenge.provide).mapError(pprintThrowable).either
 
-  val inputLines: ZIO[List[String], IndexOutOfBoundsException, List[String]] =
-    ZIO.environment
-
   def inputLinesN(n: Int): ZIO[List[String], IndexOutOfBoundsException, List[String]] =
     ZIO.accessM(xs => ZIO.effect(xs.take(n)).refineToOrDie)
 

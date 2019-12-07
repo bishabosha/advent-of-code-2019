@@ -8,8 +8,6 @@ import Option.when
 
 object Day2 with
 
-  def tabulate(range: Range) = range.map(n => range.map(n -> _)).flatten
-
   def initialise(noun: Int, verb: Int) =
     RIO.accessM((tape: IArray[Int]) =>
       Task.effect(tape.updated(1, noun).updated(2, verb)))
@@ -17,8 +15,8 @@ object Day2 with
   def find(n: Int, v: Int)(goal: Int) =
     run(n,v).fold(none, x => when(x == goal)(f"$n%2d$v%2d"))
 
-  def search(goal: Int, size: Range) =
-    ZIO.foreach(tabulate(size))(find(_,_)(goal).some.flip).flip.asError(emptyResult)
+  def search(goal: Int, domain: Range) =
+    ZIO.foreach_(domain)(x => ZIO.foreach_(domain)(y => find(x,y)(goal).some.flip)).flip.asError(emptyResult)
 
   def run(noun: Int, verb: Int) =
     (initialise(noun, verb) >>= (tpe => ZIO.fromEither(exec(given initial(tpe,Nil))))) map (_.mem(0))

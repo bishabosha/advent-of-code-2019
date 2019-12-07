@@ -1,7 +1,6 @@
 package aoc
 
 import zio._
-import PartialFunction.condOpt
 
 object Day6 with
 
@@ -9,33 +8,37 @@ object Day6 with
 
   val Orbit = raw"(\w+?)\)(\w+)".r
 
-  def parseOrbits(lines: List[String]) =
-    IO.foldLeft(lines)(Map.empty[String, String])((acc, s) =>
-      IO.fromOption(condOpt(s) { case Orbit(a,b) => acc.updated(b,a) })
-        .asError(IllegalArgumentException(s"Illegal input: $s")))
+  val parseOrbits: ZIO[List[String], IllegalArgumentException, State] =
+    RIO.accessM(IO.foldLeft(_)(Map.empty)({ (acc, s) => s match
+      case Orbit(a,b) => IO.succeed(acc.updated(b,a))
+      case _          => IO.fail(IllegalArgumentException(s"Illegal input: $s"))
+    }))
 
-  val orbits = inputLines >>= parseOrbits
+  val numberOfOrbits = parseOrbits `map` (sumOrbits(given _))
+  def numberOfHops(src: String, dest: String) = parseOrbits `map` (hops(src, dest)(given _))
 
-  val numberOfOrbits = orbits.map(sumOrbits)
-  def numberOfHops(src: String, dest: String) = orbits.map(hops(src, dest))
+  def sumOrbits(given State) = state.keys.view.map(depth).sum
 
-  def sumOrbits(state: State) =
-    state.keys.view.map(path(_)(state).length).sum
-
-  def path(obj: String)(state: State) =
-    def links(acc: List[String], key: String): List[String] =
+  inline def traverse[A](empty: => A)(combine: => (String, A) => A)(obj: String)(given State): A =
+    def links(acc: A, key: String): A =
       state.get(key) match
-      case Some(link) => links(link :: acc, link)
+      case Some(link) => links(combine(link, acc), link)
       case None       => acc
-    links(Nil, obj)
+    links(empty, obj)
 
-  def hops(you: String, dest: String)(state: State) =
-    val youP = path(you)(state)
-    val destP = path(dest)(state)
-    val prefix = youP.zip(destP).takeWhile(_ == _).length
+  def depth(obj: String)(given State) = traverse(0)((_,d) => d+1)(obj)
+  def path(obj: String)(given State) = traverse(Nil: List[String])(_::_)(obj)
+
+  def hops(you: String, dest: String)(given State) =
+    val youP = path(you)
+    val destP = path(dest)
+    val prefix = (youP `zip` destP `takeWhile` (_==_)).length
     (youP.length - prefix) + (destP.length - prefix)
+  end hops
 
   val day6_1 = challenge("day6")(numberOfOrbits)
   val day6_2 = challenge("day6")(numberOfHops("YOU", "SAN"))
+
+  inline def state(given state: State): state.type = state
 
 end Day6

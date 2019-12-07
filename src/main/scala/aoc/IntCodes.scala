@@ -69,8 +69,7 @@ object IntCodes with
 
   @tailrec def exec(given State): Either[IllegalStateException, State] =
     toCode(mem(ptr)) match
-    case Some(op) =>
-      op match
+    case Some(op) => op match
       case given _: State => exec
       case Terminate      => Right(state)
     case None => Left(IllegalStateException(s"${state.mem(state.ptr)} at Addr(${state.ptr}) is not a legal intcode"))
