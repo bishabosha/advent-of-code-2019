@@ -3,13 +3,16 @@ package aoc
 import IntOps._
 
 object IntCodes with
+  import Suspend._
 
-  type Result = State | Terminate.type
   final case class State(mem: IArray[Int], ptr: Int, in: List[Int], out: List[Int])
-  case object Terminate
+  enum Suspend with
+    case Terminate(state: State)
+    case Yield(state: State)
+    case Blocked(state: State)
   type Modes = (Arg, Arg, Arg)
   type Arg = Int => (given State) => Int
-  type Comp = (given State) => Result
+  type Comp = (given State) => Suspend | State
   type Op = (given Modes) => Comp
 
   val getTape =
@@ -50,22 +53,39 @@ object IntCodes with
     binop(cond(_,_) compare false)
   def jumpop(cond: Int => Boolean): Op =
     state.copy(ptr=if cond(_1) then _2 else ptr+3)
-  def inop: Op =
-    state.copy(mem=mem.updated(mem(ptr+1),in.head), ptr=ptr+2, in=in.tail)
+  def inop: Op = in match
+    case i::is => state.copy(mem=mem.updated(mem(ptr+1),i), ptr=ptr+2, in=is)
+    case Nil   => Blocked(state)
   def outop: Op =
-    state.copy(ptr=ptr+2, out=_1::out)
+    Yield(state.copy(ptr=ptr+2, out=_1::out))
   def nullOp: Op =
-    Terminate
+    Terminate(state)
 
   def initial(init: IArray[Int], in: List[Int]) = State(init, 0, in, Nil)
 
-  def exec(given State): Either[IllegalStateException, State] =
+  def concurrent(given State): Either[IllegalStateException, Suspend] =
     toCode(mem(ptr)) match
     case Some(op) => op match
-      case given _: State => exec
-      case Terminate      => Right(state)
-    case None => Left(IllegalStateException(s"${state.mem(state.ptr)} at Addr(${state.ptr}) is not a legal intcode"))
-  end exec
+      case given _: State   => concurrent
+      case suspend: Suspend => Right(suspend)
+    case None => Left(illegalCode)
+  end concurrent
+
+  def nonconcurrent(given State): Either[IllegalStateException, State] =
+    toCode(mem(ptr)) match
+    case Some(op) => op match
+      case s: State     => nonconcurrent(given s)
+      case n: Yield     => nonconcurrent(given n.state)
+      case t: Terminate => Right(t.state)
+      case _: Blocked   => Left(illegalConcurrent)
+    case None => Left(illegalCode)
+  end nonconcurrent
+
+  def illegalConcurrent(given State) =
+    IllegalStateException(s"cannot block with op ${mem(ptr)} at Addr($ptr), this fiber is nonconcurrent.")
+
+  def illegalCode(given State) =
+    IllegalStateException(s"${mem(ptr)} at Addr($ptr) is not a legal intcode")
 
   inline def _1(given modes: Modes, state: State) = modes _1 1
   inline def _2(given modes: Modes, state: State) = modes _2 2
