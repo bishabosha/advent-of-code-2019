@@ -3,29 +3,24 @@ package aoc
 import IntOps._
 
 object IntCodes with
-  import Suspend._
 
-  final case class State(mem: IArray[Int], ptr: Int, in: List[Int], out: List[Int])
+  final case class State(mem: IArray[Int], ptr: Int, in: LazyList[Int], out: List[Int])
   enum Suspend with
     case Terminate(state: State)
     case Yield(state: State)
-    case Blocked(state: State)
   type Modes = (Arg, Arg, Arg)
   type Arg = Int => (given State) => Int
   type Comp = (given State) => Suspend | State
   type Op = (given Modes) => Comp
 
   val getTape =
-    (inputLine map splitCsv andThen inputInts)
-      .filterOrDieMessage(_.nonEmpty)("Expected non empty tape")
-      .map(IArray(_:_*))
+    (inputLine map splitCsv andThen inputInts).filterOrDieMessage(_.nonEmpty)("Empty tape").map(IArray(_:_*))
 
-  def toCode(i: Int) =
-    validate.tupled(splitDigits(i, padLeft=5) splitAt 3 bimap(identity, collapse))
+  def step(given State) =
+    validate.tupled(splitDigits(mem(ptr), padLeft=5) splitAt 3 bimap(x => x, collapse))
 
-  def validate(modes: Array[Int], code: Int): Option[Comp] =
-    for op <- Codes.get(code); args <- Some(modes.flatMap(Modes.get))
-    if args.length == 3 yield op(given (args(2), args(1), args(0)))
+  def validate(modes: Array[Int], code: Int)(given State): Option[Suspend | State] =
+    Codes.get(code).flatMap(op => modes.flatMap(Modes.get).cond(_.length == 3)(as => op(given (as(2), as(1), as(0)))))
 
   val Codes = Map[Int, Op](
     1  -> binop(_+_),
@@ -53,39 +48,32 @@ object IntCodes with
     binop(cond(_,_) compare false)
   def jumpop(cond: Int => Boolean): Op =
     state.copy(ptr=if cond(_1) then _2 else ptr+3)
-  def inop: Op = in match
-    case i::is => state.copy(mem=mem.updated(mem(ptr+1),i), ptr=ptr+2, in=is)
-    case Nil   => Blocked(state)
+  def inop: Op =
+    state.copy(mem=mem.updated(mem(ptr+1),in.head), ptr=ptr+2, in=in.tail)
   def outop: Op =
-    Yield(state.copy(ptr=ptr+2, out=_1::out))
+    Suspend.Yield(state.copy(ptr=ptr+2, out=_1::out))
   def nullOp: Op =
-    Terminate(state)
+    Suspend.Terminate(state)
 
-  def initial(init: IArray[Int], in: List[Int]) = State(init, 0, in, Nil)
+  def initial(init: IArray[Int], in: List[Int]) = State(init, 0, LazyList(in:_*), Nil)
 
-  def concurrent(given State): Either[IllegalStateException, Suspend] =
-    toCode(mem(ptr)) match
-    case Some(op) => op match
-      case given _: State   => concurrent
-      case suspend: Suspend => Right(suspend)
-    case None => Left(illegalCode)
+  def concurrent(state: State): Either[IllegalStateException, Suspend] =
+    step(given state) match
+    case Some(state: State)     => concurrent(state)
+    case Some(suspend: Suspend) => Right(suspend)
+    case None                   => Left(illegalCode(given state))
   end concurrent
 
-  def nonconcurrent(given State): Either[IllegalStateException, State] =
-    toCode(mem(ptr)) match
-    case Some(op) => op match
-      case s: State     => nonconcurrent(given s)
-      case n: Yield     => nonconcurrent(given n.state)
-      case t: Terminate => Right(t.state)
-      case _: Blocked   => Left(illegalConcurrent)
-    case None => Left(illegalCode)
+  def nonconcurrent(state: State): Either[IllegalStateException, State] =
+    step(given state) match
+    case Some(res) => res match
+      case s: State             => nonconcurrent(s)
+      case n: Suspend.Yield     => nonconcurrent(n.state)
+      case t: Suspend.Terminate => Right(t.state)
+    case None => Left(illegalCode(given state))
   end nonconcurrent
 
-  def illegalConcurrent(given State) =
-    IllegalStateException(s"cannot block with op ${mem(ptr)} at Addr($ptr), this fiber is nonconcurrent.")
-
-  def illegalCode(given State) =
-    IllegalStateException(s"${mem(ptr)} at Addr($ptr) is not a legal intcode")
+  def illegalCode(given State) = IllegalStateException(s"${mem(ptr)} at Addr($ptr) is not a legal intcode")
 
   inline def _1(given modes: Modes, state: State) = modes _1 1
   inline def _2(given modes: Modes, state: State) = modes _2 2

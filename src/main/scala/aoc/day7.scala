@@ -1,5 +1,7 @@
 package aoc
 
+import language.implicitConversions
+
 import zio._
 import IntCodes._
 import Suspend._
@@ -14,7 +16,7 @@ object Day7
 
   def single(mem: IArray[Int], firstIn: Int, phases: IndexedSeq[Int]) =
     IO.foldLeft(phases)(firstIn)((in, phase) =>
-      for out <- IO.fromEither(nonconcurrent(given initial(mem, phase :: in :: Nil)).map(_.out)) if out.nonEmpty
+      for out <- IO.fromEither(nonconcurrent(initial(mem, phase :: in :: Nil)).map(_.out)) if out.nonEmpty
       yield out.head
     )
 
@@ -22,15 +24,12 @@ object Day7
     phases.map(phase => initial(mem, phase::Nil)).toList
 
   def roundRobin(in: Int, states: List[State]) =
-    IO.foldLeft(states)((in, List.empty[State]))((acc, state) => {
-      def run(state: State): IO[IllegalStateException, (Int, List[State])] =
-        IO.fromEither(concurrent(given state)).flatMap {
-          case b: Blocked   => IO.effectSuspendTotal(run(b.state.copy(in=acc._1::Nil)))
-          case y: Yield     => UIO.succeed(y.state.out.head, y.state::acc._2)
-          case _: Terminate => UIO.succeed(acc)
-        }
-      run(state)
-    }).map(_.bimap(identity, _.reverse))
+    IO.foldLeft(states)((in, List.empty[State]))((acc, state) =>
+      IO.fromEither(concurrent(state.copy(in=state.in #::: LazyList.continually(acc._1)))).map {
+        case y: Yield     => (y.state.out.head, y.state.copy(in=LazyList.empty,out=Nil)::acc._2)
+        case _: Terminate => acc
+      }
+    ).map(_.bimap(x => x, _.reverse))
 
   def runUntilTerminate(in: Int, states: List[State]): IO[IllegalStateException, Int] = for
     pair <- roundRobin(in, states)
