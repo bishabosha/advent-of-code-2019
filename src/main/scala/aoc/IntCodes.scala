@@ -1,61 +1,78 @@
 package aoc
 
 import IntOps._
+import collection.immutable.LongMap
 
 object IntCodes with
 
-  final case class State(mem: IArray[Int], ptr: Int, in: LazyList[Int], out: List[Int])
+  final case class State(mem: IArray[Long], dyn: LongMap[Long], ptr: Int, rel: Long, in: LazyList[Long], out: List[Long])
   enum Suspend with
     case Terminate(state: State)
     case Yield(state: State)
-  type Modes = (Arg, Arg, Arg)
-  type Arg = Int => (given State) => Int
+  type Addrs = (Addr, Addr, Addr)
+  type Addr = (given State) => Long
+  type Fetch = Addr
+  type Update = (given State) => IArray[Long] | LongMap[Long]
   type Comp = (given State) => Suspend | State
-  type Op = (given Modes) => Comp
+  type Op = (given Addrs) => Comp
 
   val getTape =
-    (inputLine map splitCsv andThen inputInts).filterOrDieMessage(_.nonEmpty)("Empty tape").map(IArray(_:_*))
+    (inputLine map splitCsv andThen inputLongs).filterOrDieMessage(_.nonEmpty)("Empty tape").map(IArray(_:_*))
 
   def step(given State) =
     validate.tupled(splitDigits(mem(ptr), padLeft=5) splitAt 3 bimap(x => x, collapse))
 
-  def validate(modes: Array[Int], code: Int)(given State): Option[Suspend | State] =
-    Codes.get(code).flatMap(op => modes.flatMap(Modes.get).cond(_.length == 3)(as => op(given (as(2), as(1), as(0)))))
+  def validate(mods: Array[Long], op: Long)(given State): Option[Suspend | State] =
+    Codes.get(op).flatMap(op => mods.flatMap(Modes.get).cond(_.size==3)(as => op(given (as(2)(1), as(1)(2), as(0)(3)))))
 
-  val Codes = Map[Int, Op](
-    1  -> binop(_+_),
-    2  -> binop(_*_),
-    3  -> inop,
-    4  -> outop,
-    5  -> jumpop(_!=0),
-    6  -> jumpop(_==0),
-    7  -> relop(_<_),
-    8  -> relop(_==_),
-    99 -> nullOp,
+  val Codes = LongMap[Op](
+    1L  -> binop(_+_),
+    2L  -> binop(_*_),
+    3L  -> inop,
+    4L  -> outop,
+    5L  -> jumpop(_!=0),
+    6L  -> jumpop(_==0),
+    7L  -> relop(_<_),
+    8L  -> relop(_==_),
+    9L  -> mvrel,
+    99L -> nullOp,
   )
 
-  val Modes = Map[Int, Arg](
-    0 -> access,
-    1 -> value
+  val Modes = LongMap[Long => Addr](
+    0L -> access,
+    1L -> value,
+    2L -> relative
   )
 
-  def access(offset: Int)(given State) = mem(mem(ptr+offset))
-  def value(offset: Int)(given State) = mem(ptr+offset)
+  def read(addr: Long): Fetch =
+    if addr < mem.length then mem(addr.toInt) else dyn.getOrElse(addr, 0)
+  def write(addr: Long, value: Long): Update =
+    if addr < mem.length then mem.updated(addr.toInt, value) else dyn.updated(addr, value)
 
-  def binop(binOp: (Int, Int) => Int): Op =
-    state.copy(mem=mem.updated(mem(ptr+3), binOp(_1,_2)), ptr=ptr+4)
-  def relop(cond: (Int, Int) => Boolean): Op =
-    binop(cond(_,_) compare false)
-  def jumpop(cond: Int => Boolean): Op =
-    state.copy(ptr=if cond(_1) then _2 else ptr+3)
+  def access(offset: Long): Addr = read(value(offset))
+  def value(offset: Long): Addr = ptr+offset
+  def relative(offset: Long): Addr = read(value(offset)) + rel
+
+  def binop(binOp: (Long, Long) => Long): Op =
+    _3(binOp(_1,_2)) match
+    case mem: IArray[Long]  => state.copy(mem=mem, ptr=ptr+4)
+    case dyn: LongMap[Long] => state.copy(dyn=dyn, ptr=ptr+4)
+  def relop(cond: (Long, Long) => Boolean): Op =
+    binop((x,y) => (cond(x,y) compare false).toLong)
+  def jumpop(cond: Long => Boolean): Op =
+    state.copy(ptr=if cond(_1) then _2.toInt else ptr+3)
+  def mvrel: Op =
+    state.copy(rel=rel+_1, ptr=ptr+2)
   def inop: Op =
-    state.copy(mem=mem.updated(mem(ptr+1),in.head), ptr=ptr+2, in=in.tail)
+    _1(in.head) match
+    case mem: IArray[Long]  => state.copy(mem=mem, in=in.tail, ptr=ptr+2)
+    case dyn: LongMap[Long] => state.copy(dyn=dyn, in=in.tail, ptr=ptr+2)
   def outop: Op =
-    Suspend.Yield(state.copy(ptr=ptr+2, out=_1::out))
+    Suspend.Yield(state.copy(out=_1::out, ptr=ptr+2))
   def nullOp: Op =
     Suspend.Terminate(state)
 
-  def initial(init: IArray[Int], in: List[Int]) = State(init, 0, LazyList(in:_*), Nil)
+  def initial(init: IArray[Long], in: List[Int]) = State(init, LongMap.empty, 0, 0L, LazyList(in:_*).map(_.toLong), Nil)
 
   def concurrent(state: State): Either[IllegalStateException, Suspend] =
     step(given state) match
@@ -75,10 +92,15 @@ object IntCodes with
 
   def illegalCode(given State) = IllegalStateException(s"${mem(ptr)} at Addr($ptr) is not a legal intcode")
 
-  inline def _1(given modes: Modes, state: State) = modes _1 1
-  inline def _2(given modes: Modes, state: State) = modes _2 2
+  inline def _1(given Addrs): Fetch = read(addrs._1)
+  inline def _2(given Addrs): Fetch = read(addrs._2)
+  inline def _1(value: Long)(given Addrs): Update = write(addrs._1, value)
+  inline def _3(value: Long)(given Addrs): Update = write(addrs._3, value)
+  inline def addrs(given addrs: Addrs): addrs.type = addrs
   inline def state(given state: State): state.type = state
   inline def mem(given State): state.mem.type = state.mem
+  inline def dyn(given State): state.dyn.type = state.dyn
+  inline def rel(given State): state.rel.type = state.rel
   inline def ptr(given State): state.ptr.type = state.ptr
   inline def in(given State): state.in.type = state.in
   inline def out(given State): state.out.type = state.out

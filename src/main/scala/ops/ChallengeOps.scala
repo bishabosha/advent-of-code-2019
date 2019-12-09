@@ -20,4 +20,9 @@ object ChallengeOps with
       ZIO.traverse(in.zipWithIndex)((s, i) =>
         StringIO parseInt(s) mapError (err => NumberFormatException(s"At input ${i + 1}: ${err.getMessage}"))))
 
+  val inputLongs: ZIO[List[String], NumberFormatException, List[Long]] =
+    ZIO.accessM(in =>
+      ZIO.traverse(in.zipWithIndex)((s, i) =>
+        StringIO parseLong(s) mapError (err => NumberFormatException(s"At input ${i + 1}: ${err.getMessage}"))))
+
   private def pprintThrowable(err: Throwable) = s"${err.getClass.getSimpleName}: ${err.getMessage}"

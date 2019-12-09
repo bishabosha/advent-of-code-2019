@@ -15,8 +15,8 @@ inline def [A,B](a: A) cond(cond: => A => Boolean)(ifTrue: => A => B) = if cond(
 
 inline def [A, B, C, D](pair: (A, B)) bimap (f: => A => C, g: => B => D): (C, D) = (f(pair._1), g(pair._2))
 
-def (arr: IArray[Int]) updated(idx: Int, a: Int): IArray[Int] =
-  val arr1 = new Array[Int](arr.length)
+def [A: ClassTag](arr: IArray[A]) updated(idx: Int, a: A): IArray[A] =
+  val arr1 = new Array[A](arr.length)
   System.arraycopy(arr, 0, arr1, 0, arr.length)
   arr1(idx) = a
-  arr1.asInstanceOf[IArray[Int]]
+  arr1.asInstanceOf[IArray[A]]

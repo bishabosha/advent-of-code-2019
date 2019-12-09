@@ -8,30 +8,30 @@ import Suspend._
 
 object Day7
 
-  def outputs(mem: IArray[Int], firstIn: Int, phases: IndexedSeq[Int]) =
+  def outputs(mem: IArray[Long], firstIn: Int, phases: IndexedSeq[Int]) =
     IO.foreachPar(phases.permutations.toArray)(single(mem,firstIn,_))
 
-  def outputsFeedback(mem: IArray[Int], firstIn: Int, phases: IndexedSeq[Int]) =
+  def outputsFeedback(mem: IArray[Long], firstIn: Int, phases: IndexedSeq[Int]) =
     IO.foreachPar(phases.permutations.toArray)(phases => runUntilTerminate(firstIn, parallelInit(mem,phases)))
 
-  def single(mem: IArray[Int], firstIn: Int, phases: IndexedSeq[Int]) =
-    IO.foldLeft(phases)(firstIn)((in, phase) =>
-      for out <- IO.fromEither(nonconcurrent(initial(mem, phase :: in :: Nil)).map(_.out)) if out.nonEmpty
+  def single(mem: IArray[Long], firstIn: Int, phases: IndexedSeq[Int]) =
+    IO.foldLeft(phases)(firstIn.toLong)((in, phase) =>
+      for out <- IO.fromEither(nonconcurrent(initial(mem, phase :: in.toInt :: Nil)).map(_.out)) if out.nonEmpty
       yield out.head
     )
 
-  def parallelInit(mem: IArray[Int], phases: Seq[Int]) =
+  def parallelInit(mem: IArray[Long], phases: Seq[Int]) =
     phases.map(phase => initial(mem, phase::Nil)).toList
 
-  def roundRobin(in: Int, states: List[State]) =
-    IO.foldLeft(states)((in, List.empty[State]))((acc, state) =>
+  def roundRobin(in: Long, states: List[State]) =
+    IO.foldLeft(states)((in.toLong, List.empty[State]))((acc, state) =>
       IO.fromEither(concurrent(state.copy(in=state.in #::: LazyList.continually(acc._1)))).map {
         case y: Yield     => (y.state.out.head, y.state.copy(in=LazyList.empty,out=Nil)::acc._2)
         case _: Terminate => acc
       }
     ).map(_.bimap(x => x, _.reverse))
 
-  def runUntilTerminate(in: Int, states: List[State]): IO[IllegalStateException, Int] = for
+  def runUntilTerminate(in: Long, states: List[State]): IO[IllegalStateException, Long] = for
     pair <- roundRobin(in, states)
     res  <- if pair._2.isEmpty then UIO.succeed(pair._1) else IO.effectSuspendTotal(runUntilTerminate.tupled(pair))
   yield res
