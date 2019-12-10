@@ -17,7 +17,7 @@ object IntCodes with
   type Op = (given Addrs) => Comp
 
   val getTape =
-    (inputLine map splitCsv andThen inputLongs).filterOrDieMessage(_.nonEmpty)("Empty tape").map(IArray(_:_*))
+    (sourceHead map splitCsv andThen parseLongs).filterOrDieMessage(_.nonEmpty)("Empty tape").map(IArray(_:_*))
 
   def step(given State) =
     validate.tupled(splitDigits(mem(ptr), padLeft=5) splitAt 3 bimap(x => x, collapse))

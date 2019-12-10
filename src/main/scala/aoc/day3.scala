@@ -45,8 +45,8 @@ object Day3 with
   def parsePath(xs: List[String]) = parse(xs).map(_.flatMap(_.map(_._2)))
   def parsePathWithSteps(xs: List[String]) = parse(xs).map(_.flatten)
 
-  val getCoords = inputLinesN(2) >>= (ZIO.foreachPar(_)(parsePath `compose` splitCsv))
-  val getCoordsWithSteps = inputLinesN(2) >>= (ZIO.foreachPar(_)(parsePathWithSteps `compose` splitCsv))
+  val getCoords = sourceLinesN(2) >>= (ZIO.foreachPar(_)(parsePath `compose` splitCsv))
+  val getCoordsWithSteps = sourceLinesN(2) >>= (ZIO.foreachPar(_)(parsePathWithSteps `compose` splitCsv))
 
   val shortestDist =
     for

@@ -8,8 +8,8 @@ object Day6 with
 
   val Orbit = raw"(\w+?)\)(\w+)".r
 
-  val parseOrbits: ZIO[List[String], IllegalArgumentException, State] =
-    RIO.accessM(IO.foldLeft(_)(Map.empty)({ (acc, s) => s match
+  val parseOrbits: TaskR[Challenge, State] =
+    sourceFile >>= (IO.foldLeft(_)(Map.empty)({ (acc, s) => s match
       case Orbit(a,b) => IO.succeed(acc.updated(b,a))
       case _          => IO.fail(IllegalArgumentException(s"Illegal input: $s"))
     }))

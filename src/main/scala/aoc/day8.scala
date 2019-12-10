@@ -17,7 +17,7 @@ object Day8
     (src transpose) `map` (_ `dropWhile` (_=='2') head)
 
   def getLayers(w: Int, h: Int) =
-    inputLine >>= layers(w,h) andThen IO.fromEither
+    sourceHead >>= layers(w,h) andThen IO.fromEither
 
   def filtered(w: Int, h: Int) =
     getLayers(w,h) >>= minZeros andThen (_ `map` onesByTwos) andThen IO.fromEither

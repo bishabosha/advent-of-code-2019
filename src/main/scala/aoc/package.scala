@@ -1,9 +1,10 @@
 package aoc
 
 import _root_.ops._
+import _root_.ops._
 import reflect.ClassTag
 
-export ChallengeOps._, ConsoleOps._, NumericOps.{_, given}, FileIO._, StringIO._
+export ops.Challenge, ChallengeOps._, ConsoleOps._, NumericOps.{_, given}, FileIO._, StringIO._
 
 def none[A] = (_: A) => None
 

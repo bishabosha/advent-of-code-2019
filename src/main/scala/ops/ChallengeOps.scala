@@ -6,23 +6,23 @@ import zio.console._
 
 object ChallengeOps with
 
-  def challenge[A](in: String)(challenge: TaskR[List[String], A]): URIO[Blocking, Either[String, A]] =
-    (FileIO lines s"inputs/$in" >>= challenge.provide) mapError pprintThrowable either
+  private final class ChallengeEnv(sourceFile: List[String]) extends Console.Live with Challenge.Live(sourceFile)
 
-  def inputLinesN(n: Int): ZIO[List[String], IndexOutOfBoundsException, List[String]] =
-    ZIO.accessM(xs => ZIO.effect(xs take n) refineToOrDie)
+  def challenge[A](in: String)(challenge: RIO[Challenge & Console, A]): UIO[Either[String, A]] =
+    ((FileIO lines s"inputs/$in" >>= challenge.provide compose (ChallengeEnv(_))) mapError pprint)
+      .either provide Blocking.Live
 
-  val inputLine: ZIO[List[String], IndexOutOfBoundsException, String] =
-    inputLinesN(1) map (_.head)
+  def sourceLinesN(n: Int): ZIO[Challenge, IndexOutOfBoundsException, List[String]] =
+    sourceFile >>= (sf => ZIO.effect(sf take n)) refineToOrDie
 
-  val inputInts: ZIO[List[String], NumberFormatException, List[Int]] =
-    ZIO.accessM(in =>
-      ZIO.traverse(in.zipWithIndex)((s, i) =>
-        StringIO parseInt(s) mapError (err => NumberFormatException(s"At input ${i + 1}: ${err.getMessage}"))))
+  val sourceFile = URIO.access[Challenge](_.challenge.sourceFile)
+  val sourceHead = sourceLinesN(1) map (_.head)
 
-  val inputLongs: ZIO[List[String], NumberFormatException, List[Long]] =
-    ZIO.accessM(in =>
-      ZIO.traverse(in.zipWithIndex)((s, i) =>
-        StringIO parseLong(s) mapError (err => NumberFormatException(s"At input ${i + 1}: ${err.getMessage}"))))
+  val parseInts = parse(StringIO.parseInt)
+  val parseLongs = parse(StringIO.parseLong)
 
-  private def pprintThrowable(err: Throwable) = s"${err.getClass.getSimpleName}: ${err.getMessage}"
+  private def parse[A](f: String => IO[NumberFormatException, A]) =
+    URIO.accessM[List[String]](in => ZIO.traverse(in.zipWithIndex)((s, i) =>
+      f(s) mapError (err => NumberFormatException(s"At input ${i + 1}: ${err.getMessage}"))))
+
+  private def pprint(err: Throwable) = s"${err.getClass.getSimpleName}: ${err.getMessage}"

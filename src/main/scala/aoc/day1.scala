@@ -15,8 +15,8 @@ object Day1 with
   def calcFuel[A: Numeric](f: A => A)(as: List[A]) =
     as.map(f).sumAll
 
-  val totalFuel    = inputInts.map(calcFuel(fuel))
-  val totalFuelRec = inputInts.map(calcFuel(fuelRec))
+  val totalFuel    = sourceFile andThen parseInts map calcFuel(fuel)
+  val totalFuelRec = sourceFile andThen parseInts map calcFuel(fuelRec)
 
   val day1_1 = challenge("day1")(totalFuel)
   val day1_2 = challenge("day1")(totalFuelRec)

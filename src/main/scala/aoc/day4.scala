@@ -21,7 +21,7 @@ object Day4 with
 
   val Range = raw"(\d{6})-(\d{6})".r
 
-  val getRange = inputLine >>= ({
+  val getRange = sourceHead >>= ({
     case Range(lo, hi) => UIO.succeed(lo.toInt `to` hi.toInt)
     case fail          => IO.fail(IllegalArgumentException(s"Illegal input $fail"))
   })
