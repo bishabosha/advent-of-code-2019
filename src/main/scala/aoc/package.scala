@@ -13,6 +13,9 @@ def emptyResult = IllegalArgumentException("No result found")
 def splitCsv(s: String) = s.split(',').toList
 
 inline def [A,B](a: A) cond(cond: => A => Boolean)(ifTrue: => A => B) = if cond(a) then Some(ifTrue(a)) else None
+inline def [A](a: A) adjust(cond: => A => Boolean)(ifTrue: => A => A) = if cond(a) then ifTrue(a) else a
+
+inline def (a: Int) th = a-1
 
 inline def [A, B, C, D](pair: (A, B)) bimap (f: => A => C, g: => B => D): (C, D) = (f(pair._1), g(pair._2))
 

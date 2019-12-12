@@ -72,7 +72,7 @@ object IntCodes with
   def nullOp: Op =
     Suspend.Terminate(state)
 
-  def initial(init: IArray[Long], in: List[Int]) = State(init, LongMap.empty, 0, 0L, LazyList(in:_*).map(_.toLong), Nil)
+  def initial(init: IArray[Long], in: Int*) = State(init, LongMap.empty, 0, 0L, LazyList(in:_*).map(_.toLong), Nil)
 
   def concurrent(state: State): Either[IllegalStateException, Suspend] =
     step(given state) match

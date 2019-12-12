@@ -16,12 +16,12 @@ object Day7
 
   def single(mem: IArray[Long], firstIn: Int, phases: IndexedSeq[Int]) =
     IO.foldLeft(phases)(firstIn.toLong)((in, phase) =>
-      for out <- IO.fromEither(nonconcurrent(initial(mem, phase :: in.toInt :: Nil)).map(_.out)) if out.nonEmpty
+      for out <- IO.fromEither(nonconcurrent(initial(mem, phase, in.toInt)).map(_.out)) if out.nonEmpty
       yield out.head
     )
 
   def parallelInit(mem: IArray[Long], phases: Seq[Int]) =
-    phases.map(phase => initial(mem, phase::Nil)).toList
+    phases.map(phase => initial(mem, phase)).toList
 
   def roundRobin(in: Long, states: List[State]) =
     IO.foldLeft(states)((in.toLong, List.empty[State]))((acc, state) =>

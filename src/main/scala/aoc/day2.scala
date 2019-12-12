@@ -19,7 +19,7 @@ object Day2 with
     ZIO.foreach_(domain)(x => ZIO.foreach_(domain)(y => find(x,y)(goal).some.flip)).flip.asError(emptyResult)
 
   def run(noun: Int, verb: Int) =
-    (initialise(noun, verb) >>= (tpe => ZIO.fromEither(nonconcurrent(initial(tpe,Nil))))) map (_.mem(0))
+    (initialise(noun, verb) >>= (tpe => ZIO.fromEither(nonconcurrent(initial(tpe))))) map (_.mem(0))
 
   val day2_1 = challenge("day2")(run(noun=12, verb=2) `compose` getTape)
   val day2_2 = challenge("day2")(search(19690720, 0 to 99) `compose` getTape)
