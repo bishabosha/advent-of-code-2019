@@ -3,8 +3,7 @@ package aoc
 import zio._
 import java.lang.Math._
 
-import spire.math.Integral
-import cats.kernel.Eq
+import spire.math.Integral, cats.kernel.Eq
 
 import Option.when
 
