@@ -18,6 +18,9 @@ inline def (a: Int) th = a-1
 
 inline def [A, B, C, D](pair: (A, B)) bimap (f: => A => C, g: => B => D): (C, D) = (f(pair._1), g(pair._2))
 
+final case class Coord(x: Int, y: Int)
+final case class CoordL(x: Long, y: Long)
+
 def (arr: IArray[Long]) updated(idx: Int, a: Long): IArray[Long] =
   val arr1 = new Array[Long](arr.length)
   System.arraycopy(arr, 0, arr1, 0, arr.length)

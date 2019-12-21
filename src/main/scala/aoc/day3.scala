@@ -4,7 +4,6 @@ import zio._
 
 object Day3 with
 
-  type Coord = (Int,Int)
   type Path  = Array[(Int, Coord)]
 
   val Op = raw"([R|L|U|D])(\d+)".r
@@ -25,17 +24,17 @@ object Day3 with
   def fill(delta: Int, current: Int, coord: Coord)(op: Coord => Int => Coord) =
     (1 to delta).toArray.map(i => (current + i, op(coord)(i)))
 
-  def u(x: Int, y: Int)(delta: Int) = x -> (y + delta)
-  def d(x: Int, y: Int)(delta: Int) = x -> (y - delta)
-  def l(x: Int, y: Int)(delta: Int) = (x - delta) -> y
-  def r(x: Int, y: Int)(delta: Int) = (x + delta) -> y
+  def u(x: Int, y: Int)(delta: Int) = Coord(x, (y + delta))
+  def d(x: Int, y: Int)(delta: Int) = Coord(x, (y - delta))
+  def l(x: Int, y: Int)(delta: Int) = Coord((x - delta), y)
+  def r(x: Int, y: Int)(delta: Int) = Coord((x + delta), y)
 
   def state(old: Coord, current: Int)(in: String): Either[String, (Coord, Int, Path)] = in match
     case Op(op, dist) => Right(offset(old, current, op.head, dist.toInt))
     case _            => Left(s"malformatted input $in")
 
   def parse(xs: List[String]) =
-    ZIO.foldLeft(xs)(((0,0), 0, Array.empty[(Int, Coord)])::Nil)({ (acc, s) =>
+    ZIO.foldLeft(xs)((Coord(0,0), 0, Array.empty[(Int, Coord)])::Nil)({ (acc, s) =>
       val (old, current, _) :: rest = acc
       ZIO.fromEither(state(old, current)(s))
          .map(_ :: acc)
@@ -50,7 +49,7 @@ object Day3 with
 
   val shortestDist =
     for
-      crosses   <- getCoords.map(_.map(_.toSet).reduce(_ `intersect` _) - ((0,0)))
+      crosses   <- getCoords.map(_.map(_.toSet).reduce(_ `intersect` _) - Coord(0,0))
       distances =  crosses.map((x,y) => math.abs(x) + math.abs(y)).toList.sortWith(_<_)
       shortest  <- ZIO.effect(distances.head)
     yield
@@ -60,7 +59,7 @@ object Day3 with
     for
       coordss    <- getCoordsWithSteps
       stepCounts =  coordss map(_.groupBy(_._2).view.mapValues(_.map(_._1) sortWith(_<_) head))
-      crosses    =  (coordss map (_.map(_._2) toSet) reduce(_`intersect`_)) - ((0,0))
+      crosses    =  (coordss map (_.map(_._2) toSet) reduce(_`intersect`_)) - Coord(0,0)
       distances  =  (crosses map(xy => stepCounts map(_(xy)) sum) toList) sortWith(_<_)
       shortest   <- ZIO.effect(distances.head)
     yield

@@ -18,8 +18,6 @@ object Day10
       (0 until coords(0).length).foldLeft(acc)((acc, y) =>
         if coords(x)(y) then Coord(x,y) :: acc else acc))
 
-  final case class Coord(x: Int, y: Int)
-
   inline def searchGen[A](z: => A, f: => (Coord, A) => A)(x: Int, y: Int)(state: State) =
     def hits(acc: A, remaining: State): A = remaining match
     case c::remaining =>

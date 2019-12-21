@@ -9,7 +9,7 @@ import IntCodes.{getTape => arcadeGame, State => GameState, _}
 object Day13 with
   import TileId._
 
-  sealed trait TileId(val id: Int) extends Product with Serializable derives Eql
+  sealed trait TileId(val id: Int) extends Product with Serializable derives Eql // change to Enum once https://github.com/lampepfl/dotty/issues/7410 is fixed
 
   object TileId with
 
@@ -24,12 +24,11 @@ object Day13 with
     def tile(id: Long) =
       if id < tiles.length then Right(tiles(id.toInt)) else Left(IllegalStateException(s"unexpected tile id: $id"))
 
-  final case class Coord(x: Long, y: Long)
-  val empty = Coord(-1,-1)
+  val empty = CoordL(-1,-1)
 
-  type Screen = Map[Coord, TileId]
+  type Screen = Map[CoordL, TileId]
 
-  def TileE(id: Long, x: Long, y: Long) = TileId.tile(id).map(Coord(x,y) -> _)
+  def TileE(id: Long, x: Long, y: Long) = TileId.tile(id).map(CoordL(x,y) -> _)
 
   val numberOfBlockTiles =
     (arcadeGame >>= (mem => run(Map.empty,initial(mem)))) map countBlocks
@@ -47,7 +46,7 @@ object Day13 with
       }
     }
 
-  def play(screen: Screen, game: GameState, score: Long, ball: Coord, paddle: Coord): Either[IllegalStateException, Long] =
+  def play(screen: Screen, game: GameState, score: Long, ball: CoordL, paddle: CoordL): Either[IllegalStateException, Long] =
     concurrent(game) match
     case Right(Suspend.Yield(game)) if game.out.size == 3 =>
       (game.out: @unchecked) match

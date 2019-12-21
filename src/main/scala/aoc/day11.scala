@@ -5,7 +5,6 @@ import IntCodes.{getTape => paintProg, State => ProgState, _}
 import zio._
 import zio.console._
 
-import Day10.Coord
 import math._
 
 object Day11 with
