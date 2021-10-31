@@ -6,30 +6,33 @@ import spire.math._
 import reflect.ClassTag
 import math.pow
 
-object NumericOps with
+object NumericOps:
 
   def N[A: Numeric] = summon[Numeric[A]]
   def I[A: Integral] = summon[Integral[A]]
 
-  given NumericSyntax: [A: Numeric](self: A) with
-    def / (that: A): A        = N.div(self, that)
-    def > (that: A): Boolean  = N.gt(self, that)
-    def - (that: A): A        = N.minus(self, that)
-    def + (that: A): A        = N.plus(self, that)
-    def * (that: A): A        = N.times(self, that)
+  given NumericSyntax: AnyRef with
+    extension [A: Numeric](self: A)
+      def / (that: A): A        = N.div(self, that)
+      def > (that: A): Boolean  = N.gt(self, that)
+      def - (that: A): A        = N.minus(self, that)
+      def + (that: A): A        = N.plus(self, that)
+      def * (that: A): A        = N.times(self, that)
   end NumericSyntax
 
-  given IntegralSyntax: [A: Integral](self: A) with
-    def % (that: A): A = I.emod(self, that)
+  given IntegralSyntax: AnyRef with
+    extension [A: Integral](self: A)
+      def % (that: A): A = I.emod(self, that)
   end IntegralSyntax
 
-  given NumericIterableOps: [A: Numeric](it: Iterable[A])
-    def sumAll: A = it.foldLeft(N.zero)(_ + _)
+  given NumericIterableOps: AnyRef with
+    extension [A: Numeric](it: Iterable[A])
+      def sumAll: A = it.foldLeft(N.zero)(_ + _)
   end NumericIterableOps
 
   given [A: Numeric]: Conversion[Int, A] = N.fromInt
 
-  object IntOps with
+  object IntOps:
 
     def splitDigits[A: Numeric: Integral: ClassTag](i: A): Array[A] =
       digits(i).toArray

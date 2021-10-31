@@ -1,10 +1,12 @@
 package aoc
 
+import imports.*
+
 import zio._
 
 import java.lang.Math._
 
-object Day14 with
+object Day14:
 
   val Quantity = raw"(\d+?) (\w+)".r
   val Reaction = raw"(\d+? \w+?(?:, \d+? \w+?)*) => (\d+ \w+)".r

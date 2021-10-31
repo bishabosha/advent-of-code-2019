@@ -1,9 +1,11 @@
 package aoc
 
+import imports.*
+
 import IntCodes._
 import zio._
 
-object Day9
+object Day9:
 
   def boost(testIn: Int) =
     getTape.map(tpe =>

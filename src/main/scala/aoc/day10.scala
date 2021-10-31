@@ -1,10 +1,12 @@
 package aoc
 
+import imports.*
+
 import java.lang.Math.{abs, max, toDegrees, atan2, PI}
 
 import zio._
 
-object Day10
+object Day10:
 
   given Ordering[Double] = Ordering.Double.TotalOrdering
 

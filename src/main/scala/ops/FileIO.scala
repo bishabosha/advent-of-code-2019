@@ -7,7 +7,7 @@ import java.io.IOException
 import zio._
 import zio.blocking._
 
-object FileIO with
+object FileIO:
 
   def path(file: String): IO[InvalidPathException, Path] =
     ZIO.effect(Paths.get(file)).refineToOrDie

@@ -1,5 +1,7 @@
 package aoc
 
+import imports.*
+
 import zio._
 import java.lang.Math._
 
@@ -9,13 +11,13 @@ import Option.when
 
 import spire.implicits.{ given Integral[_], given Eq[_] }
 
-object Day12 with
+object Day12:
 
   type State = IndexedSeq[Moon]
 
   final case class Moon(x: Long, y: Long, z: Long, xV: Long, yV: Long, zV: Long)
 
-  def (m: Moon) transpose = Array(Array(m.x, m.xV), Array(m.y, m.yV), Array(m.z, m.zV))
+  extension (m: Moon) def transpose = Array(Array(m.x, m.xV), Array(m.y, m.yV), Array(m.z, m.zV))
 
   val Position = raw"<x=(-?\d+?),\s*?y=(-?\d+?),\s*z=(-?\d+)>".r
 
@@ -24,14 +26,14 @@ object Day12 with
     case fail            => IO.fail(IllegalArgumentException(s"not a position: $fail"))
   })
 
-  def run(steps: Int, state: State) = LazyList.iterate(state)(step).tail take steps last
+  def run(steps: Int, state: State) = (LazyList.iterate(state)(step).tail take steps).last
 
   def step(state: State): State = (
     for i <- state.indices.toArray
     yield applyVelocity(state.indices.view.filter(_!=i).foldLeft(state(i))((m,n) => update(m,state(n))))
-  ) toIndexedSeq
+  ).toIndexedSeq
 
-  def (moons: State) toAxess = (moons map (_.transpose) transpose) map (_.flatten)
+  extension (moons: State) def toAxess = ((moons map (_.transpose)).transpose) map (_.flatten)
 
   def applyVelocity(m: Moon) = m.copy(x = m.x+m.xV, y = m.y+m.yV, z = m.z+m.zV)
 
@@ -44,7 +46,7 @@ object Day12 with
   def energy(m: Moon) = m match
     case Moon(x,y,z,xV,yV,zV) => (abs(x) + abs(y) + abs(z)) * (abs(xV) + abs(yV) + abs(zV))
 
-  def totalEnergy(state: State)    = state map energy sum
+  def totalEnergy(state: State)    = (state map energy).sum
   def totalEnergyAfter(steps: Int) = moons map (ms => run(steps, ms.toArray.toIndexedSeq)) map totalEnergy
   val firstRepetition              = moons map (ms => searchRepetitions(ms.toArray.toIndexedSeq))
 

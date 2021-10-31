@@ -1,9 +1,11 @@
 package aoc
 
+import imports.*
+
 import zio._
 import IntOps._
 
-object Day4 with
+object Day4:
 
   def digitss(range: Range) =
     range map splitDigits

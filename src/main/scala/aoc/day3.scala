@@ -1,18 +1,21 @@
 package aoc
 
+import imports.*
+
 import zio._
 
-object Day3 with
+
+object Day3:
 
   type Path  = Array[(Int, Coord)]
 
   val Op = raw"([R|L|U|D])(\d+)".r
 
   val Steps = Map(
-    'U' -> step(u),
-    'D' -> step(d),
-    'L' -> step(l),
-    'R' -> step(r)
+    'U' -> step(wrap(u)),
+    'D' -> step(wrap(d)),
+    'L' -> step(wrap(l)),
+    'R' -> step(wrap(r))
   )
 
   def offset(old: Coord, current: Int, dir: Char, dist: Int): (Coord, Int, Path) =
@@ -23,6 +26,9 @@ object Day3 with
 
   def fill(delta: Int, current: Int, coord: Coord)(op: Coord => Int => Coord) =
     (1 to delta).toArray.map(i => (current + i, op(coord)(i)))
+
+  def wrap(op: (x: Int, y: Int) => (delta: Int) => Coord): Coord => Int => Coord =
+    case Coord(x, y) => op(x, y)
 
   def u(x: Int, y: Int)(delta: Int) = Coord(x, (y + delta))
   def d(x: Int, y: Int)(delta: Int) = Coord(x, (y - delta))
@@ -50,7 +56,7 @@ object Day3 with
   val shortestDist =
     for
       crosses   <- getCoords.map(_.map(_.toSet).reduce(_ `intersect` _) - Coord(0,0))
-      distances =  crosses.map((x,y) => math.abs(x) + math.abs(y)).toList.sortWith(_<_)
+      distances =  crosses.map({ case Coord(x,y) => math.abs(x) + math.abs(y) }).toList.sortWith(_<_)
       shortest  <- ZIO.effect(distances.head)
     yield
       shortest
@@ -58,9 +64,9 @@ object Day3 with
   val shortestDistWithSteps =
     for
       coordss    <- getCoordsWithSteps
-      stepCounts =  coordss map(_.groupBy(_._2).view.mapValues(_.map(_._1) sortWith(_<_) head))
-      crosses    =  (coordss map (_.map(_._2) toSet) reduce(_`intersect`_)) - Coord(0,0)
-      distances  =  (crosses map(xy => stepCounts map(_(xy)) sum) toList) sortWith(_<_)
+      stepCounts =  coordss map (_.groupBy(_._2).view.mapValues(_.map(_._1).sortWith(_<_).head))
+      crosses    =  (coordss map (_.map(_._2).toSet) reduce (_`intersect`_)) - Coord(0,0)
+      distances  =  (crosses map (xy => stepCounts.map(_(xy)).sum) toList) sortWith(_<_)
       shortest   <- ZIO.effect(distances.head)
     yield
       shortest

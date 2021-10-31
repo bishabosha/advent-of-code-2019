@@ -1,9 +1,11 @@
 package aoc
 
+import imports.*
+
 import zio._
 import IntCodes._
 
-object Day5 with
+object Day5:
 
   def run(in: Int) = (getTape >>= (tpe => ZIO.fromEither(nonconcurrent(initial(tpe,in))))) map (_.out.head)
 

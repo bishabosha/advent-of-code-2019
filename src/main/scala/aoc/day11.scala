@@ -1,5 +1,7 @@
 package aoc
 
+import imports.*
+
 import IntCodes.{getTape => paintProg, State => ProgState, _}
 
 import zio._
@@ -7,7 +9,7 @@ import zio.console._
 
 import math._
 
-object Day11 with
+object Day11:
 
   type State = Map[Coord, Long]
 
@@ -36,7 +38,7 @@ object Day11 with
 
   def message(start: Int) = messageRows(start) map { s =>
     val length = (s map (_.keys.max)).max
-    s.map(xs => (0 to length) map (i => if xs.contains(i) then '*' else ' ') mkString).mkString("\n","\n","")
+    s.map(xs => (0 to length).map(i => if xs.contains(i) then '*' else ' ').mkString).mkString("\n","\n","")
   }
 
   def messageRows(start: Int) =

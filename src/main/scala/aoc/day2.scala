@@ -1,12 +1,15 @@
 package aoc
 
+import imports.*
+
 import zio._
 import PartialFunction.condOpt
 
 import IntCodes._
 import Option.when
 
-object Day2 with
+
+object Day2:
 
   def initialise(noun: Int, verb: Int) =
     RIO.accessM((tape: IArray[Long]) =>
@@ -16,7 +19,7 @@ object Day2 with
     run(n,v).fold(none, x => when(x == goal)(f"$n%2d$v%2d"))
 
   def search(goal: Int, domain: Range) =
-    ZIO.foreach_(domain)(x => ZIO.foreach_(domain)(y => find(x,y)(goal).some.flip)).flip.asError(emptyResult)
+    ZIO.foreach_(domain)(x => ZIO.foreach_(domain)(y => find(x,y)(goal).some.flip)).flip.mapError(_ => emptyResult)
 
   def run(noun: Int, verb: Int) =
     (initialise(noun, verb) >>= (tpe => ZIO.fromEither(nonconcurrent(initial(tpe))))) map (_.mem(0))

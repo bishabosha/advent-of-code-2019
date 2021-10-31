@@ -1,13 +1,18 @@
 package ops
 
-trait Challenge with
+import zio.*
 
-  val challenge: Challenge.Service[Any]
+type Challenge = Has[Challenge.Service]
 
-object Challenge with
+object Challenge:
 
-  trait Service[R](val sourceFile: List[String])
+  trait Service:
+    val sourceFile: List[String]
 
-  trait Live(sourceFile: List[String]) extends Challenge with
+  object Service:
 
-    val challenge: Challenge.Service[Any] = new Service[Any](sourceFile) {}
+    def live(files: List[String]): Service = new:
+      val sourceFile: List[String] = files
+
+  def makeLayer(files: List[String]): ULayer[Challenge] =
+    ZLayer.succeed(Service.live(files))

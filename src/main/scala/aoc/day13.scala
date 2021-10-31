@@ -1,17 +1,19 @@
 package aoc
 
+import imports.*
+
 import language.implicitConversions
 
 import zio._
 
 import IntCodes.{getTape => arcadeGame, State => GameState, _}
 
-object Day13 with
+object Day13:
   import TileId._
 
-  sealed trait TileId(val id: Int) extends Product with Serializable derives Eql // change to Enum once https://github.com/lampepfl/dotty/issues/7410 is fixed
+  sealed trait TileId(val id: Int) extends Product with Serializable derives CanEqual // change to Enum once https://github.com/lampepfl/dotty/issues/7410 is fixed
 
-  object TileId with
+  object TileId:
 
     val tiles = Array(Empty, Wall, Block, Paddle, Ball).ensuring(_.zipWithIndex.forall(_.id ==_))
 

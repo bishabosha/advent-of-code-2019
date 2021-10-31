@@ -1,10 +1,13 @@
 package aoc
 
+import imports.{*, given}
+
 import language.implicitConversions
 
 import spire.math._
 
-object Day1 with
+
+object Day1:
 
   def fuel[A: Numeric](mass: A): A =
     N.floor(mass / 3) - 2

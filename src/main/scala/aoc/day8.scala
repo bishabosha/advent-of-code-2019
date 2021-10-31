@@ -1,8 +1,10 @@
 package aoc
 
+import imports.*
+
 import zio._
 
-object Day8
+object Day8:
 
   def layers(w: Int, h: Int)(src: String) =
     src.cond(_.size % (w*h) == 0)(_ `grouped` (w*h) toIndexedSeq) `toRight` dimErr

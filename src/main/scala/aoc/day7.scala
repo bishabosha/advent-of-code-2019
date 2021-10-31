@@ -1,12 +1,14 @@
 package aoc
 
+import imports.*
+
 import language.implicitConversions
 
 import zio._
 import IntCodes._
 import Suspend._
 
-object Day7
+object Day7:
 
   def outputs(mem: IArray[Long], firstIn: Int, phases: IndexedSeq[Int]) =
     IO.foreachPar(phases.permutations.toArray)(single(mem,firstIn,_))
@@ -16,8 +18,9 @@ object Day7
 
   def single(mem: IArray[Long], firstIn: Int, phases: IndexedSeq[Int]) =
     IO.foldLeft(phases)(firstIn.toLong)((in, phase) =>
-      for out <- IO.fromEither(nonconcurrent(initial(mem, phase, in.toInt)).map(_.out)) if out.nonEmpty
-      yield out.head
+      val run = nonconcurrent(initial(mem, phase, in.toInt))
+      val res = run.flatMap(_.out.headOption.toRight(IllegalStateException("no next codes")))
+      IO.fromEither(res)
     )
 
   def parallelInit(mem: IArray[Long], phases: Seq[Int]) =
