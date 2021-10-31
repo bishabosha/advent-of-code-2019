@@ -11,5 +11,5 @@ lazy val root = project
 
     libraryDependencies += "com.github.sbt" % "junit-interface" % "0.13.2" % "test",
     libraryDependencies += "dev.zio" %% "zio-test" % "1.0.12",
-    libraryDependencies += ("org.typelevel" % "spire" % "0.17.0").cross(CrossVersion.for3Use2_13)
+    libraryDependencies += "org.typelevel" %% "spire" % "0.18.0-M1"
   )

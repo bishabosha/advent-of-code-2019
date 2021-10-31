@@ -2,8 +2,10 @@ package aoc
 
 import imports.*
 
-import zio._
-import IntOps._
+import zio.*
+import IntOps.*
+
+import spire.implicits.given
 
 object Day4:
 

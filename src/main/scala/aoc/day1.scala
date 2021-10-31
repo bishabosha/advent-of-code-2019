@@ -4,7 +4,8 @@ import imports.{*, given}
 
 import language.implicitConversions
 
-import spire.math._
+import spire.math.Numeric
+import spire.implicits.given
 
 
 object Day1:

@@ -3,13 +3,8 @@ package aoc
 import imports.*
 
 import zio._
-import java.lang.Math._
 
-import spire.math.Integral, cats.kernel.Eq
-
-import Option.when
-
-import spire.implicits.{ given Integral[_], given Eq[_] }
+import spire.implicits.given
 
 object Day12:
 
@@ -35,7 +30,7 @@ object Day12:
 
   extension (moons: State) def toAxess = ((moons map (_.transpose)).transpose) map (_.flatten)
 
-  def applyVelocity(m: Moon) = m.copy(x = m.x+m.xV, y = m.y+m.yV, z = m.z+m.zV)
+  def applyVelocity(m: Moon) = m.copy(x = m.x + m.xV, y = m.y + m.yV, z = m.z + m.zV)
 
   def update(m: Moon, n: Moon) = m.copy(
     xV = m.xV - (m.x - n.x).sign,
@@ -44,7 +39,7 @@ object Day12:
   )
 
   def energy(m: Moon) = m match
-    case Moon(x,y,z,xV,yV,zV) => (abs(x) + abs(y) + abs(z)) * (abs(xV) + abs(yV) + abs(zV))
+    case Moon(x,y,z,xV,yV,zV) => (x.abs + y.abs + z.abs) * (xV.abs + yV.abs + zV.abs)
 
   def totalEnergy(state: State)    = (state map energy).sum
   def totalEnergyAfter(steps: Int) = moons map (ms => run(steps, ms.toArray.toIndexedSeq)) map totalEnergy

@@ -5,6 +5,7 @@ import imports.*
 import IntOps._
 import collection.immutable.LongMap
 
+import spire.implicits.given
 
 object IntCodes:
 
