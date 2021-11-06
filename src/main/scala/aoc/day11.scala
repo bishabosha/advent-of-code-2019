@@ -1,6 +1,6 @@
 package aoc
 
-import imports.*
+import exports.*
 
 import IntCodes.{getTape => paintProg, State => ProgState, _}
 
@@ -25,7 +25,7 @@ object Day11:
   def runPaint1(prog: ProgState, current: Coord, facing: Int)(state: State): IO[IllegalStateException, State] =
     IO.fromEither(concurrent(prog)).flatMap {
       case Suspend.Yield(prog) =>
-        val dir = ((facing + (if prog.out.head == 0 then -90 else 90)) % 360).adjust(_ < 0)(_+360)
+        val dir = ((facing + (if prog.out.head == 0 then -90 else 90)) % 360).ensureWhen(_ < 0)(_ + 360)
         val next = Coord(
           x = current.x + sin(toRadians(dir.toDouble)).toInt,
           y = current.y - cos(toRadians(dir.toDouble)).toInt

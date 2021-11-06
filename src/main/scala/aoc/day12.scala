@@ -1,6 +1,6 @@
 package aoc
 
-import imports.*
+import exports.*
 
 import zio._
 
@@ -50,7 +50,7 @@ object Day12:
 
     def inner(i: Int, moons: State, periods: Array[Int]): Long =
       val periods1 = periods lazyZip first lazyZip moons.toAxess map ((o, orig, curr) =>
-        o.adjust(-1 == _ && curr == orig)(_ => i)
+        o.ensureWhen(-1 == _ && curr == orig)(_ => i)
       )
       if periods1 exists (-1 == _) then inner(i+1, step(moons), periods1)
       else periods1 map (_.toLong) reduce I.lcm

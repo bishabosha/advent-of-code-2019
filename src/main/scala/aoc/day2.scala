@@ -1,6 +1,6 @@
 package aoc
 
-import imports.*
+import exports.*
 
 import zio._
 import PartialFunction.condOpt
@@ -19,7 +19,7 @@ object Day2:
     run(n,v).fold(none, x => when(x == goal)(f"$n%2d$v%2d"))
 
   def search(goal: Int, domain: Range) =
-    ZIO.foreach_(domain)(x => ZIO.foreach_(domain)(y => find(x,y)(goal).some.flip)).flip.mapError(_ => emptyResult)
+    ZIO.foreach_(domain)(x => ZIO.foreach_(domain)(y => find(x,y)(goal).some.flip)).flip.mapError(emptyResult)
 
   def run(noun: Int, verb: Int) =
     (initialise(noun, verb) >>= (tpe => ZIO.fromEither(nonconcurrent(initial(tpe))))) map (_.mem(0))

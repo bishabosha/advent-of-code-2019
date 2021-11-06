@@ -1,6 +1,6 @@
 package aoc
 
-import imports.*
+import exports.*
 
 import java.lang.Math.{abs, max, toDegrees, atan2, PI}
 
@@ -43,7 +43,7 @@ object Day10:
     map map collectTrue >>= (s => searchAll(s) map (p => mostAt(p._1, p._2)(s).toSeq.sortBy(_._1).apply(index)._2))
 
   def angle(x: Int, y: Int)(a: Coord) =
-    toDegrees(atan2((a.y - y).toDouble, (a.x - x).toDouble) + PI/2.0).adjust(_ < 0)(_ + 360)
+    toDegrees(atan2((a.y - y).toDouble, (a.x - x).toDouble) + PI/2.0).ensureWhen(_ < 0)(_ + 360)
 
   def dist(x: Int, y: Int)(a: Coord) = abs(x - a.x) + abs(y - a.y)
 

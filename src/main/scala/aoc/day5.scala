@@ -1,6 +1,6 @@
 package aoc
 
-import imports.*
+import exports.*
 
 import zio._
 import IntCodes._
