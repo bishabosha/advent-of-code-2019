@@ -18,6 +18,12 @@ def emptyResult[A](a: A) = IllegalArgumentException("No result found")
 
 def splitCsv(s: String) = s.split(',').toList
 
+extension [A](it: Iterable[A]) def cartesian =
+  for
+    x <- it.view
+    y <- it.view
+  yield (x, y)
+
 extension [A, B](a: A)
   def cond(cond: A => Boolean)(ifTrue: A => B) =
     if cond(a) then Some(ifTrue(a)) else None

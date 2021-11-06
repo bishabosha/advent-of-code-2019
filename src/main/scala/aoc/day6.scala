@@ -1,8 +1,7 @@
 package aoc
 
-import exports.*
-
-import zio._
+import aoc.exports.*
+import zio.*
 
 object Day6:
 
@@ -11,9 +10,10 @@ object Day6:
   val Orbit = raw"(\w+?)\)(\w+)".r
 
   val parseOrbits: RIO[Challenge, State] =
-    sourceFile >>= (IO.foldLeft(_)(Map.empty)({ (acc, s) => s match
-      case Orbit(a,b) => IO.succeed(acc.updated(b,a))
-      case _          => IO.fail(IllegalArgumentException(s"Illegal input: $s"))
+    sourceFile flatMap (IO.foldLeft(_)(Map.empty)({ (acc, s) =>
+      s match
+        case Orbit(a, b) => IO.succeed(acc.updated(b, a))
+        case _           => IO.fail(IllegalArgumentException(s"Illegal input: $s"))
     }))
 
   val numberOfOrbits = parseOrbits `map` (sumOrbits(using _))
@@ -24,17 +24,17 @@ object Day6:
   inline def traverse[A](empty: => A)(combine: => (String, A) => A)(obj: String)(using State): A =
     def links(acc: A, key: String): A =
       state.get(key) match
-      case Some(link) => links(combine(link, acc), link)
-      case None       => acc
+        case Some(link) => links(combine(link, acc), link)
+        case None       => acc
     links(empty, obj)
 
-  def depth(obj: String)(using State) = traverse(0)((_,d) => d+1)(obj)
-  def path(obj: String)(using State) = traverse(Nil: List[String])(_::_)(obj)
+  def depth(obj: String)(using State) = traverse(0)((_, d) => d + 1)(obj)
+  def path(obj: String)(using State) = traverse(Nil: List[String])(_ :: _)(obj)
 
   def hops(you: String, dest: String)(using State) =
     val youP = path(you)
     val destP = path(dest)
-    val prefix = (youP `zip` destP `takeWhile` (_==_)).length
+    val prefix = (youP `zip` destP `takeWhile` (_ == _)).length
     (youP.length - prefix) + (destP.length - prefix)
   end hops
 

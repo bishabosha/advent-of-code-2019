@@ -1,11 +1,11 @@
 package aoc
 
-import exports.*
-
+import aoc.exports.*
 import zio.*
-import IntOps.*
 
 import spire.implicits.given
+
+import Splitting.*
 
 object Day4:
 
@@ -17,20 +17,20 @@ object Day4:
 
   def criterion(seq: Array[Int]) =
     (seq sliding 2 exists (_.distinct.size == 1))
-    && (seq sliding 2 forall (s => s.head <= s.last))
+      && (seq sliding 2 forall (s => s.head <= s.last))
 
   def criterionRestrictive(seq: Array[Int]) =
     criterion(seq)
-    && (groups(seq, 2) `diff` groups(seq, 3)).nonEmpty
+      && (groups(seq, 2) `diff` groups(seq, 3)).nonEmpty
 
   val Range = raw"(\d{6})-(\d{6})".r
 
-  val getRange = sourceHead >>= ({
+  val getRange = sourceHead flatMap ({
     case Range(lo, hi) => UIO.succeed(lo.toInt `to` hi.toInt)
     case fail          => IO.fail(IllegalArgumentException(s"Illegal input $fail"))
   })
 
-  val numberOfPasswords     = getRange `map` digitss `map` (_.filter(criterion).size)
+  val numberOfPasswords = getRange `map` digitss `map` (_.filter(criterion).size)
   val numberOfRealPasswords = getRange `map` digitss `map` (_.filter(criterionRestrictive).size)
 
   val day4_1 = challenge("day4")(numberOfPasswords)

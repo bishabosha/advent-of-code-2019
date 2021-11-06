@@ -7,11 +7,11 @@ import zio.console._
 object ChallengeOps:
 
   def challenge[A](in: String)(challenge: RIO[Challenge & Console, A]): UIO[Either[String, A]] =
-    ((FileIO lines s"inputs/$in" >>= (mklayer(_)) andThen challenge.provideLayer) mapError pprint)
+    (((FileIO lines s"inputs/$in") flatMap ((mklayer(_)) andThen challenge.provideLayer)) mapError pprint)
       .either provideLayer Blocking.live
 
   def sourceLinesN(n: Int): ZIO[Challenge, IndexOutOfBoundsException, List[String]] =
-    sourceFile >>= (sf => ZIO.effect(sf take n)) refineToOrDie
+    sourceFile flatMap (sf => ZIO.effect(sf take n)) refineToOrDie
 
   val sourceFile = URIO.access[Challenge](_.get.sourceFile)
   val sourceHead = sourceLinesN(1) map (_.head)

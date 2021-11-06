@@ -4,7 +4,7 @@ import zio._
 
 object ConsoleOps:
 
-  given ZioSyntax: AnyRef with
+  given ZioSyntax: {} with
 
     extension [A](zio: UIO[A]) def sync(): A =
       (new BootstrapRuntime {}).unsafeRun(zio)

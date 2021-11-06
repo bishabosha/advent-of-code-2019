@@ -13,14 +13,13 @@ object NumericOps:
   def N[A: Numeric] = summon[Numeric[A]]
   def I[A: Integral] = summon[Integral[A]]
 
-  given NumericIterableOps: AnyRef with
+  given NumericIterableOps: {} with
     extension [A: Numeric](it: Iterable[A])
       def sumAll: A = it.foldLeft(N.zero)(_ + _)
-  end NumericIterableOps
 
   given [A: Numeric]: Conversion[Int, A] = N.fromInt
 
-  object IntOps:
+  object Splitting:
 
     def splitDigits[A: Numeric: TruncatedDivision: ClassTag](i: A): Array[A] =
       digits(i).toArray
@@ -31,7 +30,7 @@ object NumericOps:
     def collapse[A: Numeric: ClassTag](arr: Array[A]): A =
       arr.reverse.zipWithIndex.map((n, i) => (n * N.fromDouble(pow(10, i.toDouble)))).reverse.foldLeft(N.zero)(_+_)
 
-  end IntOps
+  end Splitting
 
 
   private def digits[A: Numeric: TruncatedDivision](a: A): List[A] =
