@@ -1,18 +1,19 @@
 package aoc
 
-import zio._
+import aoc.exports.*
+import zio.*
 
-import java.lang.Math._
+import java.lang.Math.ceil
 
-object Day14 with
+object Day14:
 
   val Quantity = raw"(\d+?) (\w+)".r
   val Reaction = raw"(\d+? \w+?(?:, \d+? \w+?)*) => (\d+ \w+)".r
 
   type Quantity = (String, Long)
-  type Formula  = (List[Quantity], Quantity)
+  type Formula = (List[Quantity], Quantity)
   type Formulas = Map[String, (List[Quantity], Long)]
-  type Quants   = Map[String, Long]
+  type Quants = Map[String, Long]
 
   def oreFor(chemical: String, requirement: Long)(formulas: Formulas): UIO[Long] =
     dependencies(chemical, requirement, formulas, Map.empty) map (_.getOrElse("ORE", -1L))
@@ -23,48 +24,49 @@ object Day14 with
       for
         quantities1 <- dependenciesTake(chemical, requirement, formulas, quantities)
         ore = quantities1("ORE")
-        total <- (
+        total <-
           if ore == quantities("ORE") then UIO.succeed(total)
           else if ore > 0 then UIO.effectSuspendTotal(inner(formulas, quantities1, total + requirement, requirement))
-          else UIO.effectSuspendTotal(inner(formulas, quantities, total, requirement/2)) // backtrack with smaller amount
-        )
+          else
+            UIO.effectSuspendTotal(
+              inner(formulas, quantities, total, requirement / 2)
+            ) // backtrack with smaller amount
       yield total
 
-    inner(formulas, Map("ORE" -> ore), 0, ore/2)
+    inner(formulas, Map("ORE" -> ore), 0, ore / 2)
 
   end givenOre
 
-
   def dependenciesTake(chemical: String, requirement: Long, formulas: Formulas, quantities: Quants): UIO[Quants] =
-    dependencies(_-_, dependenciesTake)(chemical,requirement,formulas,quantities)
+    dependencies(_ - _, dependenciesTake, chemical, requirement, formulas, quantities)
 
   def dependencies(chemical: String, requirement: Long, formulas: Formulas, quantities: Quants): UIO[Quants] =
-    dependencies(_+_, dependencies)(chemical,requirement,formulas,quantities)
+    dependencies(_ + _, dependencies, chemical, requirement, formulas, quantities)
 
   inline def dependencies(
-    updateOre: => (Long, Long) => Long,
-    suspend: => (String, Long, Formulas, Quants) => UIO[Quants])(
-    chemical: String,
-    requirement: Long,
-    formulas: Formulas,
-    quantities: Quants
+      updateOre: => (Long, Long) => Long,
+      suspend: => (String, Long, Formulas, Quants) => UIO[Quants],
+      chemical: String,
+      requirement: Long,
+      formulas: Formulas,
+      quantities: Quants
   ): UIO[Quants] =
     val existing = quantities.getOrElse(chemical, 0L)
-    if requirement <= existing then
-      UIO.succeed(quantities.updated(chemical, existing - requirement))
+    if requirement <= existing then UIO.succeed(quantities.updated(chemical, existing - requirement))
     else
       val reqs -> production = formulas(chemical)
       val multiplier = quant(production, requirement - existing)
       val quantities1 = quantities.updated(chemical, (existing + production * multiplier) - requirement)
       reqs match
-      case ("ORE", ore) :: Nil =>
-        UIO.succeed(quantities1.updated("ORE", updateOre(quantities1.getOrElse("ORE", 0L), ore * multiplier)))
-      case reqs =>
-        UIO.foldLeft(reqs)(quantities1)((acc, req) =>
-          UIO.effectSuspendTotal(suspend(req._1, req._2 * multiplier, formulas, acc)) map (acc ++ _))
+        case ("ORE", ore) :: Nil =>
+          UIO.succeed(quantities1.updated("ORE", updateOre(quantities1.getOrElse("ORE", 0L), ore * multiplier)))
+        case reqs =>
+          UIO.foldLeft(reqs)(quantities1)((acc, req) =>
+            UIO.effectSuspendTotal(suspend(req._1, req._2 * multiplier, formulas, acc)) map (acc ++ _)
+          )
 
   def quant(unit: Long, requirement: Long) =
-    ceil(requirement/unit.toDouble).toLong
+    ceil(requirement / unit.toDouble).toLong
 
   def load(formulas: List[Formula]): Formulas =
     formulas.groupBy(_._2._1).map(_.bimap(identity, _.head.bimap(identity, _._2)))
@@ -74,16 +76,17 @@ object Day14 with
 
   def parseReaction(s: String): IO[IllegalArgumentException, Formula] = s match
     case Reaction(lhs, Quantity(n, c)) =>
-      IO.foldLeft(lhs.split(", "))(List.empty[Quantity]) { (acc, q) => q match
-        case Quantity(n,c) => IO.succeed((c, n.toLong) :: acc)
-        case _             => IO.fail(IllegalArgumentException(s"not a quantity: $q"))
+      IO.foldLeft(lhs.split(", "))(List.empty[Quantity]) { (acc, q) =>
+        q match
+          case Quantity(n, c) => IO.succeed((c, n.toLong) :: acc)
+          case _              => IO.fail(IllegalArgumentException(s"not a quantity: $q"))
       } map (_.reverse -> (c -> n.toLong))
     case _ => IO.fail(IllegalArgumentException(s"not a reaction: $s"))
 
   def numberOfOreFor(chemical: String, amount: Long) =
-    (sourceFile >>= parseReactions) map load >>= (oreFor(chemical, amount)(_))
+    (sourceFile flatMap parseReactions) map load flatMap (oreFor(chemical, amount)(_))
   def numberOfGivenOre(chemical: String, ore: Long) =
-    (sourceFile >>= parseReactions) map load >>= (givenOre(chemical, ore)(_))
+    (sourceFile flatMap parseReactions) map load flatMap (givenOre(chemical, ore)(_))
 
   val day14_1 = challenge("day14")(numberOfOreFor("FUEL", 1))
   val day14_2 = challenge("day14")(numberOfGivenOre("FUEL", 1000000000000L))

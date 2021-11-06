@@ -1,11 +1,14 @@
 package aoc
 
-import zio._
-import IntCodes._
+import aoc.exports.*
+import zio.*
 
-object Day5 with
+import IntCodes.*
 
-  def run(in: Int) = (getTape >>= (tpe => ZIO.fromEither(nonconcurrent(initial(tpe,in))))) map (_.out.head)
+object Day5:
+
+  def run(in: Int) =
+    (getTape flatMap (tpe => ZIO.fromEither(nonconcurrent(initial(tpe, in))))) map (_.out.head)
 
   val day5_1 = challenge("day5")(run(1))
   val day5_2 = challenge("day5")(run(5))

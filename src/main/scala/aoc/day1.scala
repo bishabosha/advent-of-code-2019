@@ -1,10 +1,13 @@
 package aoc
 
+import aoc.exports.{*, given}
+
 import language.implicitConversions
 
-import spire.math._
+import spire.math.Numeric
+import spire.implicits.given
 
-object Day1 with
+object Day1:
 
   def fuel[A: Numeric](mass: A): A =
     N.floor(mass / 3) - 2
@@ -15,7 +18,7 @@ object Day1 with
   def calcFuel[A: Numeric](f: A => A)(as: List[A]) =
     as.map(f).sumAll
 
-  val totalFuel    = sourceFile andThen parseInts map calcFuel(fuel)
+  val totalFuel = sourceFile andThen parseInts map calcFuel(fuel)
   val totalFuelRec = sourceFile andThen parseInts map calcFuel(fuelRec)
 
   val day1_1 = challenge("day1")(totalFuel)

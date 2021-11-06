@@ -2,7 +2,9 @@ package ops
 
 import zio._
 
-object ConsoleOps with
+object ConsoleOps:
 
-  def [A](zio: UIO[A]) sync(): A =
-    (new DefaultRuntime {}).unsafeRun(zio)
+  given ZioSyntax: {} with
+
+    extension [A](zio: UIO[A]) def sync(): A =
+      (new BootstrapRuntime {}).unsafeRun(zio)

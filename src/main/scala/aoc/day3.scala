@@ -1,18 +1,19 @@
 package aoc
 
-import zio._
+import aoc.exports.*
+import zio.*
 
-object Day3 with
+object Day3:
 
-  type Path  = Array[(Int, Coord)]
+  type Path = Array[(Int, Coord)]
 
   val Op = raw"([R|L|U|D])(\d+)".r
 
   val Steps = Map(
-    'U' -> step(u),
-    'D' -> step(d),
-    'L' -> step(l),
-    'R' -> step(r)
+    'U' -> step(wrap(u)),
+    'D' -> step(wrap(d)),
+    'L' -> step(wrap(l)),
+    'R' -> step(wrap(r))
   )
 
   def offset(old: Coord, current: Int, dir: Char, dist: Int): (Coord, Int, Path) =
@@ -24,6 +25,9 @@ object Day3 with
   def fill(delta: Int, current: Int, coord: Coord)(op: Coord => Int => Coord) =
     (1 to delta).toArray.map(i => (current + i, op(coord)(i)))
 
+  def wrap(op: (x: Int, y: Int) => (delta: Int) => Coord): Coord => Int => Coord =
+    case Coord(x, y) => op(x, y)
+
   def u(x: Int, y: Int)(delta: Int) = Coord(x, (y + delta))
   def d(x: Int, y: Int)(delta: Int) = Coord(x, (y - delta))
   def l(x: Int, y: Int)(delta: Int) = Coord((x - delta), y)
@@ -34,36 +38,41 @@ object Day3 with
     case _            => Left(s"malformatted input $in")
 
   def parse(xs: List[String]) =
-    ZIO.foldLeft(xs)((Coord(0,0), 0, Array.empty[(Int, Coord)])::Nil)({ (acc, s) =>
-      val (old, current, _) :: rest = acc
-      ZIO.fromEither(state(old, current)(s))
-         .map(_ :: acc)
-         .mapError(IllegalArgumentException(_))
-    }).map(_.map(_._3).toArray)
+    ZIO
+      .foldLeft(xs)((Coord(0, 0), 0, Array.empty[(Int, Coord)]) :: Nil)({ (acc, s) =>
+        val (old, current, _) :: rest = acc
+        ZIO
+          .fromEither(state(old, current)(s))
+          .map(_ :: acc)
+          .mapError(IllegalArgumentException(_))
+      })
+      .map(_.map(_._3).toArray)
 
   def parsePath(xs: List[String]) = parse(xs).map(_.flatMap(_.map(_._2)))
   def parsePathWithSteps(xs: List[String]) = parse(xs).map(_.flatten)
 
-  val getCoords = sourceLinesN(2) >>= (ZIO.foreachPar(_)(parsePath `compose` splitCsv))
-  val getCoordsWithSteps = sourceLinesN(2) >>= (ZIO.foreachPar(_)(parsePathWithSteps `compose` splitCsv))
+  val getCoords = sourceLinesN(2) flatMap (ZIO.foreachPar(_)(parsePath `compose` splitCsv))
+  val getCoordsWithSteps =
+    sourceLinesN(2) flatMap (ZIO.foreachPar(_)(parsePathWithSteps `compose` splitCsv))
 
   val shortestDist =
     for
-      crosses   <- getCoords.map(_.map(_.toSet).reduce(_ `intersect` _) - Coord(0,0))
-      distances =  crosses.map((x,y) => math.abs(x) + math.abs(y)).toList.sortWith(_<_)
-      shortest  <- ZIO.effect(distances.head)
-    yield
-      shortest
+      crosses <- getCoords.map(_.map(_.toSet).reduce(_ `intersect` _) - Coord(0, 0))
+      distances = crosses
+        .map({ case Coord(x, y) => math.abs(x) + math.abs(y) })
+        .toList
+        .sortWith(_ < _)
+      shortest <- ZIO.effect(distances.head)
+    yield shortest
 
   val shortestDistWithSteps =
     for
-      coordss    <- getCoordsWithSteps
-      stepCounts =  coordss map(_.groupBy(_._2).view.mapValues(_.map(_._1) sortWith(_<_) head))
-      crosses    =  (coordss map (_.map(_._2) toSet) reduce(_`intersect`_)) - Coord(0,0)
-      distances  =  (crosses map(xy => stepCounts map(_(xy)) sum) toList) sortWith(_<_)
-      shortest   <- ZIO.effect(distances.head)
-    yield
-      shortest
+      coordss <- getCoordsWithSteps
+      stepCounts = coordss map (_.groupBy(_._2).view.mapValues(_.map(_._1).sortWith(_ < _).head))
+      crosses = (coordss map (_.map(_._2).toSet) reduce (_ `intersect` _)) - Coord(0, 0)
+      distances = (crosses map (xy => stepCounts.map(_(xy)).sum) toList) sortWith (_ < _)
+      shortest <- ZIO.effect(distances.head)
+    yield shortest
 
   val day3_1 = challenge("day3")(shortestDist)
   val day3_2 = challenge("day3")(shortestDistWithSteps)
